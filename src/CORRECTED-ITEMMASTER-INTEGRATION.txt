@@ -1,0 +1,74 @@
+/*
+ * CORRECTED ITEMMASTER.TSX ADD-ITEM VIEW REPLACEMENT
+ * 
+ * ISSUE: The stepper needs full-height layout without padding wrapper
+ * 
+ * INSTRUCTIONS:
+ * 1. Open /pages/inventory/ItemMaster.tsx
+ * 2. Find line 1999: ) : currentView === 'add-item' ? (
+ * 3. DELETE from line 1999 through line 4886 (the entire old add-item section)
+ * 4. PASTE the code below in its place
+ * 5. Save the file
+ */
+
+      ) : currentView === 'add-item' ? (
+        /* Add Item View - NEW STEPPER IMPLEMENTATION */
+        <div className="h-full flex flex-col">
+          <AddItemStepper
+            sidebarExpanded={sidebarExpanded}
+            onCancel={() => {
+              setCurrentView('list');
+              setCurrentStep(1);
+              setCompletedSteps([]);
+            }}
+            onSubmit={() => {
+              // Handle form submission
+              alert('Item submitted successfully!');
+              setCurrentView('list');
+              setCurrentStep(1);
+              setCompletedSteps([]);
+            }}
+            // Step 1 props
+            addItemType={addItemType}
+            setAddItemType={setAddItemType}
+            gstApplicable={gstApplicable}
+            setGstApplicable={setGstApplicable}
+            hsnSacCode={hsnSacCode}
+            setHsnSacCode={setHsnSacCode}
+            gstRate={gstRate}
+            setGstRate={setGstRate}
+            sacSearchTerm={sacSearchTerm}
+            setSacSearchTerm={setSacSearchTerm}
+            showSacDropdown={showSacDropdown}
+            setShowSacDropdown={setShowSacDropdown}
+            sacCodeError={sacCodeError}
+            setSacCodeError={setSacCodeError}
+            allHsnSacCodes={sacCodesDatabase.map(sac => ({
+              code: sac.code,
+              description: sac.description,
+              gstRate: parseInt(sac.gstRate)
+            }))}
+            // Step 2 props
+            addOpeningStock={addOpeningStock}
+            setAddOpeningStock={setAddOpeningStock}
+            // Step 3 props
+            uploadedImages={uploadedImages}
+            setUploadedImages={setUploadedImages}
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            selectedImageIndex={selectedImageIndex}
+            setSelectedImageIndex={setSelectedImageIndex}
+            defaultBinLocation={defaultBinLocation}
+            setDefaultBinLocation={setDefaultBinLocation}
+            binLocationWarehouseSearch={binLocationWarehouseSearch}
+            setBinLocationWarehouseSearch={setBinLocationWarehouseSearch}
+            showBinLocationWarehouseDropdown={showBinLocationWarehouseDropdown}
+            setShowBinLocationWarehouseDropdown={setShowBinLocationWarehouseDropdown}
+            // Step 4 props
+            attachedVendors={attachedVendors}
+            setAttachedVendors={setAttachedVendors}
+            selectedVendorRows={selectedVendorRows}
+            setSelectedVendorRows={setSelectedVendorRows}
+          />
+        </div>
+      ) : (

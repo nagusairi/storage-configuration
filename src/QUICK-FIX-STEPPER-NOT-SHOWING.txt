@@ -1,0 +1,149 @@
+==============================================
+  QUICK FIX: Stepper Not Showing
+==============================================
+
+PROBLEM: When clicking "Add Item", you don't see the stepper navigation.
+
+SOLUTION: The AddItemStepper component is now fixed. Use the corrected integration code below.
+
+==============================================
+  COPY & PASTE THIS EXACT CODE
+==============================================
+
+1. Open: /pages/inventory/ItemMaster.tsx
+
+2. Find line 1999:
+   ) : currentView === 'add-item' ? (
+
+3. DELETE everything from line 1999 to line 4886
+
+4. PASTE THIS CODE:
+
+---------- START COPYING FROM HERE ----------
+
+      ) : currentView === 'add-item' ? (
+        /* Add Item View - NEW STEPPER IMPLEMENTATION */
+        <div className="h-full flex flex-col">
+          <AddItemStepper
+            sidebarExpanded={sidebarExpanded}
+            onCancel={() => {
+              setCurrentView('list');
+              setCurrentStep(1);
+              setCompletedSteps([]);
+            }}
+            onSubmit={() => {
+              alert('Item submitted successfully!');
+              setCurrentView('list');
+              setCurrentStep(1);
+              setCompletedSteps([]);
+            }}
+            addItemType={addItemType}
+            setAddItemType={setAddItemType}
+            gstApplicable={gstApplicable}
+            setGstApplicable={setGstApplicable}
+            hsnSacCode={hsnSacCode}
+            setHsnSacCode={setHsnSacCode}
+            gstRate={gstRate}
+            setGstRate={setGstRate}
+            sacSearchTerm={sacSearchTerm}
+            setSacSearchTerm={setSacSearchTerm}
+            showSacDropdown={showSacDropdown}
+            setShowSacDropdown={setShowSacDropdown}
+            sacCodeError={sacCodeError}
+            setSacCodeError={setSacCodeError}
+            allHsnSacCodes={sacCodesDatabase.map(sac => ({
+              code: sac.code,
+              description: sac.description,
+              gstRate: parseInt(sac.gstRate)
+            }))}
+            addOpeningStock={addOpeningStock}
+            setAddOpeningStock={setAddOpeningStock}
+            uploadedImages={uploadedImages}
+            setUploadedImages={setUploadedImages}
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            selectedImageIndex={selectedImageIndex}
+            setSelectedImageIndex={setSelectedImageIndex}
+            defaultBinLocation={defaultBinLocation}
+            setDefaultBinLocation={setDefaultBinLocation}
+            binLocationWarehouseSearch={binLocationWarehouseSearch}
+            setBinLocationWarehouseSearch={setBinLocationWarehouseSearch}
+            showBinLocationWarehouseDropdown={showBinLocationWarehouseDropdown}
+            setShowBinLocationWarehouseDropdown={setShowBinLocationWarehouseDropdown}
+            attachedVendors={attachedVendors}
+            setAttachedVendors={setAttachedVendors}
+            selectedVendorRows={selectedVendorRows}
+            setSelectedVendorRows={setSelectedVendorRows}
+          />
+        </div>
+      ) : (
+
+---------- STOP COPYING HERE ----------
+
+5. SAVE the file
+
+6. Refresh your browser
+
+7. Click "Add Item" button
+
+==============================================
+  WHAT YOU SHOULD SEE
+==============================================
+
+AT THE TOP:
+┌────────────────────────────────────────────┐
+│ ● Basic & GST → ○ Inventory → ○ Additional│
+│ ═══════════════                   20%      │
+└────────────────────────────────────────────┘
+
+IN THE MIDDLE:
+┌──────────────────┐  ┌──────────────────┐
+│ Item Type:       │  │ AI TIPS:         │
+│ [Dropdown ▼]     │  │ • GSTIN help     │
+│                  │  │ • HSN/SAC search │
+│ Brand Name:      │  └──────────────────┘
+│ [Input box]      │
+└──────────────────┘
+
+AT THE BOTTOM:
+┌────────────────────────────────────────────┐
+│ Cancel  Save Draft   Step 1 of 5  Prev Next│
+└────────────────────────────────────────────┘
+
+==============================================
+  STILL NOT WORKING?
+==============================================
+
+Check these:
+
+1. ✓ Import at top of ItemMaster.tsx:
+   import { AddItemStepper } from '../../components/AddItemStepper';
+
+2. ✓ No console errors in browser DevTools (F12)
+
+3. ✓ The file saved properly (check for syntax errors)
+
+4. ✓ You refreshed the page after saving
+
+==============================================
+  BONUS: ADD TEST VENDORS
+==============================================
+
+Want to see 10 sample vendors in Step 4?
+
+In ItemMaster.tsx, find line 455:
+const [attachedVendors, setAttachedVendors] = useState<AttachedVendor[]>([
+
+Add this import at the top:
+import { testVendors } from '../data/testVendors';
+
+Replace the useState line with:
+const [attachedVendors, setAttachedVendors] = useState<AttachedVendor[]>(testVendors);
+
+Now Step 4 will have 10 vendors with AI risk scores!
+
+==============================================
+  DONE! 🎉
+==============================================
+
+Your stepper should now be visible and working!

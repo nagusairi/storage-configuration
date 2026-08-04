@@ -1,0 +1,131 @@
+═══════════════════════════════════════════════════════════════════
+         VISUAL GUIDE: WHERE TO MAKE THE CHANGE
+═══════════════════════════════════════════════════════════════════
+
+FILE: /pages/inventory/ItemMaster.tsx
+
+═══════════════════════════════════════════════════════════════════
+
+CURRENT STATE (What you have now):
+───────────────────────────────────────────────────────────────────
+
+Line 1996:            sidebarExpanded={false}
+Line 1997:          />
+Line 1998:        </>
+Line 1999:      ) : currentView === 'add-item' ? (  ← START DELETING HERE
+Line 2000:        /* Add Item View */               ↓
+Line 2001:        <div className="p-6 pb-[49px]">   ↓
+Line 2002:          {/* Form Content */}            ↓
+Line 2003:          <div className="bg-white...     ↓
+Line 2004:            <form className="space-y-6">  ↓
+Line 2005:              {/* BASIC INFORMATION */}   ↓
+Line 2006:              <div>                       ↓
+...                                                 ↓
+... (2,880 more lines of old form)                 ↓
+...                                                 ↓
+Line 4886:              )}                          ↓
+Line 4887:              </form>                     ↓
+Line 4888:            </div>                        ↓
+Line 4889:          </div>                          ← END DELETING HERE
+Line 4890:      ) : (                               ← KEEP THIS LINE
+Line 4891:        /* Item Details View... */
+
+═══════════════════════════════════════════════════════════════════
+
+AFTER DELETION (What you'll have):
+───────────────────────────────────────────────────────────────────
+
+Line 1996:            sidebarExpanded={false}
+Line 1997:          />
+Line 1998:        </>
+Line 1999:      ) : (                               ← Old line 4890 moves up
+Line 2000:        /* Item Details View... */
+
+═══════════════════════════════════════════════════════════════════
+
+AFTER PASTING NEW CODE (Final result):
+───────────────────────────────────────────────────────────────────
+
+Line 1996:            sidebarExpanded={false}
+Line 1997:          />
+Line 1998:        </>
+Line 1999:      ) : currentView === 'add-item' ? (  ← NEW CODE STARTS
+Line 2000:        /* Add Item View - NEW STEPPER */ ↓
+Line 2001:        <div className="h-full...          ↓
+Line 2002:          <AddItemStepper                  ↓
+Line 2003:            sidebarExpanded={...}          ↓
+...                                                  ↓
+... (only ~64 lines of new code!)                   ↓
+...                                                  ↓
+Line 2062:          />                               ↓
+Line 2063:        </div>                             ← NEW CODE ENDS
+Line 2064:      ) : (
+Line 2065:        /* Item Details View... */
+
+═══════════════════════════════════════════════════════════════════
+
+SUMMARY OF CHANGES:
+───────────────────────────────────────────────────────────────────
+
+❌ DELETE:  Lines 1999-4889 (2,891 lines)
+✅ PASTE:   64 lines of new code from /REPLACEMENT-SECTION-ONLY.tsx
+📊 RESULT:  File shrinks from ~6,200 to ~3,400 lines
+
+═══════════════════════════════════════════════════════════════════
+
+STEP-BY-STEP ACTIONS:
+───────────────────────────────────────────────────────────────────
+
+1️⃣  Open ItemMaster.tsx
+2️⃣  Go to line 1999 (Ctrl+G → type 1999)
+3️⃣  Select lines 1999-4889
+4️⃣  Press DELETE
+5️⃣  Position cursor at end of line 1998
+6️⃣  Press ENTER (create new line)
+7️⃣  PASTE code from /REPLACEMENT-SECTION-ONLY.tsx
+8️⃣  SAVE file (Ctrl+S)
+9️⃣  REFRESH browser (Ctrl+Shift+R)
+🔟  CLICK "Add Item" button
+
+═══════════════════════════════════════════════════════════════════
+
+VERIFICATION:
+───────────────────────────────────────────────────────────────────
+
+After pasting, your code should look EXACTLY like this:
+
+```tsx
+      ) : currentView === 'add-item' ? (
+        /* Add Item View - NEW STEPPER IMPLEMENTATION */
+        <div className="h-full flex flex-col">
+          <AddItemStepper
+            sidebarExpanded={sidebarExpanded}
+            onCancel={() => {
+              setCurrentView('list');
+              setCurrentStep(1);
+              setCompletedSteps([]);
+            }}
+            onSubmit={() => {
+              alert('Item submitted successfully!');
+              setCurrentView('list');
+              setCurrentStep(1);
+              setCompletedSteps([]);
+            }}
+            // ... all other props ...
+          />
+        </div>
+      ) : (
+```
+
+═══════════════════════════════════════════════════════════════════
+
+ALTERNATIVE: USE TEST PAGE
+───────────────────────────────────────────────────────────────────
+
+If you want to SEE the stepper RIGHT NOW without editing:
+
+👉 Navigate to: /test-stepper
+
+This will show you the working stepper immediately!
+
+═══════════════════════════════════════════════════════════════════

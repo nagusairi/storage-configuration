@@ -1,0 +1,66 @@
+        {/* DataGrid for All Tabs */}
+        <div>
+          <DataGrid
+            data={currentTabData}
+            columns={dataGridColumns}
+            rowKey="id"
+            searchEnabled
+            searchPlaceholder="Search movements..."
+            searchFields={['referenceNo', 'vendor', 'customer', 'sourceWarehouse', 'destinationWarehouse']}
+            filters={dataGridFilters}
+            rowActions={dataGridRowActions}
+            selectable
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
+            pageSize={10}
+            defaultDensity="standard"
+            emptyMessage="No records found for this tab."
+            hideBorder={false}
+            disablePaddingX={false}
+          />
+
+          {/* Fixed Bottom Bulk Action Bar */}
+          {selectedRows.length > 0 && (
+            <BulkActionBar
+              selectedCount={selectedRows.length}
+              onClear={() => setSelectedRows([])}
+              itemLabel="Movement"
+              itemsLabel="Movements"
+              backgroundColor="#1a1b3d"
+              maxWidth="max-w-5xl"
+              actions={[
+                {
+                  id: 'update-status',
+                  label: 'Update Status',
+                  icon: <Edit className="w-4 h-4" />,
+                  onClick: () => {
+                    console.log('Update status for:', selectedRows);
+                    alert(`Update status for ${selectedRows.length} movement(s)?`);
+                  },
+                  variant: 'secondary'
+                },
+                {
+                  id: 'print',
+                  label: 'Print Documents',
+                  icon: <Printer className="w-4 h-4" />,
+                  onClick: () => {
+                    console.log('Print documents for:', selectedRows);
+                    alert(`Print documents for ${selectedRows.length} movement(s)?`);
+                  },
+                  variant: 'secondary'
+                },
+                {
+                  id: 'export',
+                  label: 'Export Selected',
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: () => {
+                    console.log('Export:', selectedRows);
+                    alert(`Exporting ${selectedRows.length} movement(s)...`);
+                  },
+                  variant: 'primary'
+                }
+              ]}
+            />
+          )}
+        </div>
+      </div>

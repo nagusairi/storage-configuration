@@ -1,0 +1,58 @@
+═══════════════════════════════════════════════
+  SIMPLEST POSSIBLE GUIDE - 5 Steps Only
+═══════════════════════════════════════════════
+
+📁 File: /pages/inventory/ItemMaster.tsx
+
+═══════════════════════════════════════════════
+
+STEP 1: Go to Line 1999
+------------------------
+Press: Ctrl+G (or Cmd+G)
+Type: 1999
+Press: Enter
+
+
+STEP 2: Select Lines 1999-4889
+-------------------------------
+Click at start of line 1999
+Hold Shift
+Press: Ctrl+G (or Cmd+G)
+Type: 4889
+Press: Enter + Shift+End
+
+You should see 2,890 lines highlighted in yellow
+
+
+STEP 3: Delete Selected Code
+-----------------------------
+Press: Delete (or Backspace)
+
+[2,890 lines disappear!]
+
+
+STEP 4: Paste New Code
+-----------------------
+Put cursor at end of line 1998
+Press: Enter (new line)
+Open: /EXACT-REPLACEMENT-CODE.txt
+Copy all (Ctrl+A, Ctrl+C)
+Paste: Ctrl+V
+
+
+STEP 5: Save & Test
+-------------------
+Save: Ctrl+S
+Browser: Ctrl+Shift+R (hard refresh)
+Click: "Add Item" button
+See: Horizontal stepper! 🎉
+
+═══════════════════════════════════════════════
+
+THAT'S IT!
+
+If you see the stepper with 5 steps at the top = SUCCESS ✅
+
+If not, check /MANUAL-INTEGRATION-STEPS.md for detailed troubleshooting.
+
+═══════════════════════════════════════════════

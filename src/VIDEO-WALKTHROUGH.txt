@@ -1,0 +1,237 @@
+═══════════════════════════════════════════════════════════
+   VIDEO-STYLE WALKTHROUGH: Replace Old Form with Stepper
+═══════════════════════════════════════════════════════════
+
+⏱️ ESTIMATED TIME: 2 minutes
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 1: Open the File
+═══════════════════════════════════════════════════════════
+
+1. Open your code editor (VS Code, WebStorm, etc.)
+
+2. Open file: /pages/inventory/ItemMaster.tsx
+
+3. You should see ~6,200 lines of code
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 2: Navigate to Line 1999
+═══════════════════════════════════════════════════════════
+
+1. Press: Ctrl+G (Windows/Linux) or Cmd+G (Mac)
+   
+   A "Go to Line" dialog appears
+
+2. Type: 1999
+
+3. Press: Enter
+
+   Your cursor jumps to line 1999
+
+4. You should see:
+   ┌────────────────────────────────────────────┐
+   │ 1999:  ) : currentView === 'add-item' ? (  │
+   │ 2000:    /* Add Item View */               │
+   │ 2001:    <div className="p-6 pb-[49px]">   │
+   └────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 3: Select the Old Code (This is Important!)
+═══════════════════════════════════════════════════════════
+
+METHOD 1: Using Keyboard (Recommended)
+
+1. Position cursor at START of line 1999
+   (Click at the very beginning, before the spaces)
+
+2. Press: Shift+Ctrl+G (or Shift+Cmd+G on Mac)
+   
+   Go to Line dialog appears WHILE keeping selection
+
+3. Type: 4889
+
+4. Press: Enter
+
+5. Press: Shift+End
+   
+   This extends selection to end of line 4889
+
+   You should see YELLOW HIGHLIGHTED text from line 1999-4889
+
+
+METHOD 2: Using Mouse
+
+1. Click at the START of line 1999
+
+2. Scroll down (this will take a while - it's 2,890 lines!)
+
+3. Hold SHIFT and click at the END of line 4889
+
+   You should see YELLOW HIGHLIGHTED text
+
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 4: Verify Your Selection
+═══════════════════════════════════════════════════════════
+
+Look at your editor's status bar (bottom of screen)
+
+You should see:
+┌─────────────────────────────────────────────┐
+│ Ln 1999-4889, Col 1   2890 lines selected  │
+└─────────────────────────────────────────────┘
+
+If you see "2890 lines" or "2891 lines" = ✅ CORRECT
+
+If you see different number = ⚠️ WRONG - try again!
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 5: Delete the Old Code
+═══════════════════════════════════════════════════════════
+
+1. With the code still highlighted, press: Delete (or Backspace)
+
+   [WHOOSH! 2,890 lines disappear]
+
+2. You should now see:
+   ┌────────────────────────────────────────────┐
+   │ 1998:        </>                           │
+   │ 1999:      ) : (                           │
+   │ 2000:        /* Item Details View... */    │
+   └────────────────────────────────────────────┘
+
+   Notice: Line 1999 now has ") : (" instead of the old form!
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 6: Position Cursor for New Code
+═══════════════════════════════════════════════════════════
+
+1. Click at the END of line 1998 (after the </>)
+
+2. Press: Enter
+
+   A new blank line 1999 appears
+
+3. Your cursor should be blinking on the new empty line
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 7: Copy the New Code
+═══════════════════════════════════════════════════════════
+
+1. Open file: /EXACT-REPLACEMENT-CODE.txt
+
+2. Select ALL text in that file (Ctrl+A or Cmd+A)
+
+3. Copy it (Ctrl+C or Cmd+C)
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 8: Paste the New Code
+═══════════════════════════════════════════════════════════
+
+1. Go back to ItemMaster.tsx
+
+2. Make sure cursor is on the blank line after line 1998
+
+3. Paste: Ctrl+V (or Cmd+V on Mac)
+
+   [New code appears - much shorter, only ~64 lines!]
+
+4. You should see:
+   ┌────────────────────────────────────────────┐
+   │ 1998:        </>                           │
+   │ 1999:      ) : currentView === 'add-item'  │
+   │ 2000:        /* NEW STEPPER */             │
+   │ 2001:        <div className="h-full...     │
+   │ 2002:          <AddItemStepper             │
+   │ ...                                        │
+   │ 2062:          />                          │
+   │ 2063:        </div>                        │
+   │ 2064:      ) : (                           │
+   │ 2065:        /* Item Details View... */    │
+   └────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 9: Save the File
+═══════════════════════════════════════════════════════════
+
+1. Press: Ctrl+S (or Cmd+S on Mac)
+
+2. Look for "✓ Saved" indicator in your editor
+
+3. Check the file tab - the dot should disappear (means saved)
+
+═══════════════════════════════════════════════════════════
+🎬 SCENE 10: Test in Browser
+═══════════════════════════════════════════════════════════
+
+1. Go to your browser
+
+2. Hard refresh: Ctrl+Shift+R (or Cmd+Shift+R on Mac)
+
+3. Navigate to: Item Master page
+
+4. Click: "Add Item" button
+
+5. 🎉 YOU SHOULD SEE:
+
+   ┌──────────────────────────────────────────────────┐
+   │ ● Basic & GST → ○ Inventory → ○ Additional ...  │ ← Stepper!
+   │ ═══════════════════════════════════  20%         │
+   └──────────────────────────────────────────────────┘
+   
+   ┌─────────────────────┐  ┌───────────────────────┐
+   │ Item Type:          │  │ AI ASSIST             │
+   │ [Dropdown ▼]        │  │ ✨ Tips               │
+   │                     │  │ • GSTIN Auto-fill     │
+   │ Brand Name:         │  │ • HSN/SAC search      │
+   │ [Input box]         │  └───────────────────────┘
+   └─────────────────────┘
+   
+   ┌──────────────────────────────────────────────────┐
+   │ Cancel  Save Draft   Step 1 of 5  ← Prev  Next →│
+   └──────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════
+✅ SUCCESS!
+═══════════════════════════════════════════════════════════
+
+You now have the modern 5-step stepper instead of the old form!
+
+File went from ~6,200 lines → ~3,400 lines
+You saved ~2,800 lines of code!
+
+═══════════════════════════════════════════════════════════
+🐛 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════
+
+PROBLEM: "SyntaxError: Unexpected token"
+FIX: 
+  - Check that you didn't accidentally select ") : (" on line 4890
+  - Make sure you have matching braces
+
+PROBLEM: "Cannot find module AddItemStepper"
+FIX:
+  - Scroll to top of file
+  - Line 56 should have:
+    import { AddItemStepper } from '../../components/AddItemStepper';
+
+PROBLEM: "Property selectedVendorRows does not exist"
+FIX:
+  - Find line ~181
+  - Should have:
+    const [selectedVendorRows, setSelectedVendorRows] = useState<number[]>([]);
+  - If missing, add it!
+
+PROBLEM: Still seeing old form in browser
+FIX:
+  1. Check you saved the file (Ctrl+S)
+  2. Hard refresh browser (Ctrl+Shift+R)
+  3. Clear browser cache
+  4. Check browser console (F12) for errors
+
+═══════════════════════════════════════════════════════════
+🎬 END OF WALKTHROUGH
+═══════════════════════════════════════════════════════════
+
+Total time: ~2 minutes
+Result: Modern stepper interface! 🎉
