@@ -473,7 +473,7 @@ export function StorageHierarchyOverview({ data, searchTerm }: StorageHierarchyO
   };
 
   return (
-    <div className="grid grid-cols-5 gap-4 h-full relative">
+    <div className="hierarchy-grid-wrapper grid grid-cols-5 gap-4 h-full relative">
       {/* Success Message Toast */}
       {showSuccessMessage && (
         <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg flex items-center gap-3 animate-in slide-in-from-top-2">
@@ -489,7 +489,7 @@ export function StorageHierarchyOverview({ data, searchTerm }: StorageHierarchyO
         </div>
       )}
       {/* Left Panel - Tree View (40%) */}
-      <div className="col-span-2 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+      <div className="hierarchy-tree-panel col-span-2 min-h-[600px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-4">
           <HierarchyTree
             data={hierarchyData}
@@ -501,7 +501,7 @@ export function StorageHierarchyOverview({ data, searchTerm }: StorageHierarchyO
       </div>
 
       {/* Right Panel - Details View (60%) */}
-      <div className="col-span-3 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+      <div className="hierarchy-details-panel col-span-3 min-h-[600px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
         {selectedNode ? (
           <div className="flex-1 overflow-y-auto">
             {/* Header - Sticky */}

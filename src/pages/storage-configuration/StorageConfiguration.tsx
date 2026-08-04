@@ -18,6 +18,11 @@ export default function StorageConfiguration() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('hierarchy');
   const [showFilters, setShowFilters] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setIsScrolled(e.currentTarget.scrollTop > 10);
+  };
 
   // Get current warehouse data (null when "all" is selected)
   const currentWarehouseData = selectedWarehouse !== 'all' ? mockStorageHierarchyByWarehouse[selectedWarehouse] : null;
@@ -45,18 +50,6 @@ export default function StorageConfiguration() {
 
   const breadcrumbs = ['Dashboard', 'Storage Configuration'];
 
-  // Breadcrumb Actions - Add Warehouse button
-  const breadcrumbActions = (
-    <button
-      className="px-4 py-2 text-sm rounded-[3px] transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] focus:border-transparent bg-[#5C1F3D] text-white hover:bg-[#4a1831]"
-      style={{ height: '33px' }}
-      onClick={() => console.log('Add Warehouse')}
-    >
-      <Plus className="w-4 h-4" />
-      <span>Add Warehouse</span>
-    </button>
-  );
-
   const tabs = [
     { id: 'storage-hierarchy', label: 'Storage Hierarchy' },
     { id: 'zones', label: 'Zones' },
@@ -75,15 +68,17 @@ export default function StorageConfiguration() {
   return (
     <ModulePageTemplate
       breadcrumbs={breadcrumbs}
-      breadcrumbActions={breadcrumbActions}
       disableTemplatePadding={true}
     >
-      <div className="flex flex-col h-full bg-[#f7f8f9] p-3">
+      <div 
+        onScroll={handleScroll}
+        className="storage-config-page-wrapper flex flex-col h-full bg-[#f7f8f9] p-3 overflow-y-auto"
+      >
         {/* Warehouse Selector and Info */}
-        <div className="px-6 py-4 bg-white rounded-t-lg">
-          <div className="flex gap-6">
+        <div className="warehouse-selector-card-wrapper px-6 py-4 bg-white rounded-t-lg">
+          <div className="warehouse-grid-wrapper flex gap-6">
             {/* Left Column - Warehouse Dropdown (30%) */}
-            <div style={{ width: '30%' }}>
+            <div className="warehouse-select-col" style={{ width: '30%' }}>
               <label className="block text-sm text-gray-700 mb-2">Warehouse</label>
               <SearchableWarehouseSelect
                 warehouses={mockWarehouses}
@@ -95,7 +90,7 @@ export default function StorageConfiguration() {
 
             {/* Right Column - Warehouse Info (70%) */}
             {currentWarehouseData && (
-              <div style={{ width: '70%' }}>
+              <div className="warehouse-metrics-col" style={{ width: '70%' }}>
                 <div className="flex items-start gap-4 pt-7">
                   {/* Location */}
                   <div style={{ flex: '1.5' }}>
@@ -171,7 +166,7 @@ export default function StorageConfiguration() {
 
             {/* All Warehouses Metrics (shown when selectedWarehouse === 'all') */}
             {selectedWarehouse === 'all' && (
-              <div style={{ width: '70%' }}>
+              <div className="warehouse-metrics-col" style={{ width: '70%' }}>
                 <div className="flex items-start gap-4 pt-7">
                   {/* Total Warehouses */}
                   <div style={{ flex: '1.5' }}>
@@ -249,7 +244,9 @@ export default function StorageConfiguration() {
 
         {/* Tab Navigation */}
         <div 
-          className="flex gap-0 relative bg-white px-6" 
+          className={`storage-tab-nav-wrapper sticky -top-4 z-20 flex gap-0 bg-white px-6 pt-3 rounded-t-lg transition-all duration-200 ${
+            isScrolled ? 'shadow-sm' : ''
+          }`} 
           style={{ borderBottom: '1px solid #d1def0' }}
         >
           {tabs.map((tab) => (
@@ -297,9 +294,9 @@ export default function StorageConfiguration() {
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-hidden rounded-b-lg">
+        <div className="storage-tab-content-wrapper flex-1 min-h-[650px] overflow-hidden rounded-b-lg">
           {activeTab === 'storage-hierarchy' && (
-            <div className="h-full flex flex-col bg-white rounded-b-lg">
+            <div className="storage-hierarchy-tab-container h-full min-h-[650px] flex flex-col bg-white rounded-b-lg pb-[20px]">
               {/* Search and Filters Bar */}
               <div className="px-6 pt-4 space-y-4">
                 {/* Search and View Mode */}
