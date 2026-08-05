@@ -12,31 +12,13 @@ interface WarehouseSetupScreenProps {
   warehouseName?: string;
 }
 
-const PRIMARY_METHODS = [
-  {
-    method: 'flowone-template' as SetupMethod,
-    icon: Sparkles,
-    iconBg: 'bg-[#5C1F3D]',
-    title: 'flowOne Template',
-    description: 'Industry-standard warehouse blueprint provided by flowOne. Recommended for most warehouses.',
-    badge: 'Recommended',
-  },
-  {
-    method: 'scratch' as SetupMethod,
-    icon: Layers,
-    iconBg: 'bg-blue-600',
-    title: 'Build From Scratch',
-    description: 'Create a completely custom warehouse hierarchy.',
-    badge: null,
-  },
-  {
-    method: 'import' as SetupMethod,
-    icon: Upload,
-    iconBg: 'bg-gray-700',
-    title: 'Import Existing Configuration',
-    description: 'Import an Excel or JSON warehouse configuration.',
-    badge: null,
-  },
+const FLOWONE_TEMPLATES = [
+  { id: 'flowone-dc', name: 'Distribution Center', description: 'Standard high-volume DC layout with Pallet Racks, Shelving & Bulk storage.', badge: 'Recommended' },
+  { id: 'flowone-cold', name: 'Cold Storage', description: 'Temperature-controlled multi-zone layout with freezer racks & staging.' },
+  { id: 'flowone-mfg', name: 'Manufacturing', description: 'WIP buffer zones, raw material storage & production line feed bins.' },
+  { id: 'flowone-retail', name: 'Retail', description: 'Fast-pick forward locations, backroom storage & high-density shelving.' },
+  { id: 'flowone-pharma', name: 'Pharma', description: 'Secure vault storage, quarantine zones & lot-tracked bin hierarchy.' },
+  { id: 'flowone-3pl', name: '3PL', description: 'Multi-tenant client partition storage with flexible dynamic allocation.' },
 ];
 
 export function WarehouseSetupScreen({
@@ -45,6 +27,7 @@ export function WarehouseSetupScreen({
   warehouseName = 'New Warehouse',
 }: WarehouseSetupScreenProps) {
   const [selectedMethod, setSelectedMethod] = useState<SetupMethod>('flowone-template');
+  const [selectedFlowOneSubId, setSelectedFlowOneSubId] = useState<string>('flowone-dc');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -66,6 +49,10 @@ export function WarehouseSetupScreen({
 
   const publishedTemplates = filteredTemplates.filter(t => t.status === 'published');
   const draftTemplates = filteredTemplates.filter(t => t.status === 'draft');
+
+  const isFlowOneSelected = selectedMethod === 'flowone-template' && !selectedTemplateId;
+  const isScratchSelected = selectedMethod === 'scratch' && !selectedTemplateId;
+  const isImportSelected = selectedMethod === 'import' && !selectedTemplateId;
 
   return (
     <div className="flex flex-col h-full bg-[#f7f8f9] rounded-lg border border-[#d1def0] overflow-hidden">
@@ -103,52 +90,170 @@ export function WarehouseSetupScreen({
           </p>
         </div>
 
-        {/* Primary Setup Options (3 Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {PRIMARY_METHODS.map(({ method, icon: Icon, iconBg, title, description, badge }) => {
-            const isSelected = selectedMethod === method && !selectedTemplateId;
-            return (
-              <button
-                key={method}
-                onClick={() => selectPrimary(method)}
-                className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[160px] ${
-                  isSelected
-                    ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md'
-                    : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
-                }`}
-              >
-                {/* Badge / Selected Check */}
-                <div className="flex items-center justify-between w-full mb-3">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg} shadow-sm`}>
-                    <Icon className="w-5 h-5 text-white" />
+        {/* Primary Setup Options (3 Cards Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-start">
+          {/* Card 1: flowOne Templates (Inline Expanding Card) */}
+          <div
+            className={`group text-left rounded-xl border-2 transition-all flex flex-col justify-between relative bg-white transition-all ${
+              isFlowOneSelected
+                ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md md:col-span-1'
+                : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
+            }`}
+          >
+            <button
+              onClick={() => selectPrimary('flowone-template')}
+              className="p-5 w-full text-left flex flex-col justify-between min-h-[160px]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between w-full mb-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#5C1F3D] shadow-sm">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                {isFlowOneSelected ? (
+                  <div className="w-5 h-5 rounded-full bg-[#5C1F3D] flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
                   </div>
-                  {isSelected ? (
-                    <div className="w-5 h-5 rounded-full bg-[#5C1F3D] flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                  ) : badge ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#5C1F3D] text-white">
-                      {badge}
-                    </span>
-                  ) : null}
-                </div>
+                ) : (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#5C1F3D] text-white">
+                    Recommended
+                  </span>
+                )}
+              </div>
 
-                <div>
-                  <h3 className="text-sm font-bold text-[#172B4D] mb-1 group-hover:text-[#5C1F3D] transition-colors">
-                    {title}
-                  </h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    {description}
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#172B4D] mb-1 group-hover:text-[#5C1F3D] transition-colors">
+                  flowOne Templates
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Industry-standard warehouse blueprints provided by flowOne.
+                </p>
+              </div>
 
-                <div className="flex items-center gap-1 text-xs font-semibold text-[#5C1F3D] mt-4 pt-2 border-t border-gray-100">
-                  {isSelected ? 'Selected' : 'Select option'}
-                  <ArrowRight className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1 text-xs font-semibold text-[#5C1F3D] mt-4 pt-2 border-t border-gray-100">
+                {isFlowOneSelected ? 'Selected (Select blueprint below)' : 'Select category'}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </button>
+
+            {/* Inline Expanded Templates Selection */}
+            {isFlowOneSelected && (
+              <div className="border-t border-[#d1def0] bg-[#fdfafb] p-4 rounded-b-xl flex flex-col gap-2">
+                <p className="text-[11px] font-bold text-[#5C1F3D] uppercase tracking-wider mb-1">
+                  Select Blueprint Template:
+                </p>
+                {FLOWONE_TEMPLATES.map(tpl => {
+                  const isSubSelected = selectedFlowOneSubId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFlowOneSubId(tpl.id);
+                      }}
+                      className={`text-left p-3 rounded-lg border transition-all flex items-start gap-2.5 ${
+                        isSubSelected
+                          ? 'border-[#5C1F3D] bg-white ring-1 ring-[#5C1F3D]/20 shadow-2xs'
+                          : 'border-transparent bg-white/60 hover:bg-white hover:border-gray-200'
+                      }`}
+                    >
+                      {/* Radio button dot */}
+                      <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isSubSelected ? 'border-[#5C1F3D]' : 'border-gray-300'
+                      }`}>
+                        {isSubSelected && <div className="w-2 h-2 rounded-full bg-[#5C1F3D]" />}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-xs font-bold ${isSubSelected ? 'text-[#5C1F3D]' : 'text-[#172B4D]'}`}>
+                            {tpl.name}
+                          </p>
+                          {tpl.badge && (
+                            <span className="text-[9px] font-bold bg-[#5C1F3D] text-white px-1.5 py-0.2 rounded-full">
+                              {tpl.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                          {tpl.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Card 2: Build From Scratch */}
+          <button
+            onClick={() => selectPrimary('scratch')}
+            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[160px] ${
+              isScratchSelected
+                ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md'
+                : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-3">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-600 shadow-sm">
+                <Layers className="w-5 h-5 text-white" />
+              </div>
+              {isScratchSelected && (
+                <div className="w-5 h-5 rounded-full bg-[#5C1F3D] flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
-              </button>
-            );
-          })}
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-[#172B4D] mb-1 group-hover:text-[#5C1F3D] transition-colors">
+                Build From Scratch
+              </h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Create a completely custom warehouse hierarchy.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1 text-xs font-semibold text-[#5C1F3D] mt-4 pt-2 border-t border-gray-100">
+              {isScratchSelected ? 'Selected' : 'Select option'}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
+          </button>
+
+          {/* Card 3: Import Existing Configuration */}
+          <button
+            onClick={() => selectPrimary('import')}
+            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[160px] ${
+              isImportSelected
+                ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md'
+                : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-3">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-700 shadow-sm">
+                <Upload className="w-5 h-5 text-white" />
+              </div>
+              {isImportSelected && (
+                <div className="w-5 h-5 rounded-full bg-[#5C1F3D] flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-[#172B4D] mb-1 group-hover:text-[#5C1F3D] transition-colors">
+                Import Existing Configuration
+              </h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Import an Excel or JSON warehouse configuration.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1 text-xs font-semibold text-[#5C1F3D] mt-4 pt-2 border-t border-gray-100">
+              {isImportSelected ? 'Selected' : 'Select option'}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
+          </button>
         </div>
 
         {/* Search & Filter Header for Templates */}
