@@ -8,7 +8,7 @@ export type PickingStrategy = 'FIFO' | 'FEFO' | 'LIFO';
 export type TemplateStatus = 'published' | 'draft';
 export type SetupMethod = 'flowone-template' | 'published-template' | 'draft-template' | 'scratch' | 'import';
 export type ValidationSeverity = 'pass' | 'warning' | 'error';
-export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type EntryTab = 'overview' | 'hierarchy-model' | 'zone-layouts' | 'templates' | 'naming-rules' | 'validation' | 'activity';
 
 // ---- Hierarchy ----
