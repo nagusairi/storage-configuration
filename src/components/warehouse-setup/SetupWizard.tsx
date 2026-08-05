@@ -127,14 +127,17 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
 
       {/* Wizard Footer */}
       <div className="bg-white border-t border-[#d1def0] px-6 py-3 flex items-center justify-between flex-shrink-0">
-        <button
-          onClick={goPrev}
-          disabled={state.currentStep === 1 && !state.returnToStep}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Previous
-        </button>
+        {state.currentStep > 1 ? (
+          <button
+            onClick={goPrev}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </button>
+        ) : (
+          <div />
+        )}
 
         <div className="flex items-center gap-3">
           {/* Save Draft */}
