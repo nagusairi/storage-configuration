@@ -28,6 +28,7 @@ interface EntryScreenProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSetupClick: (method?: SetupMethod, step?: WizardStep) => void;
+  onNewWarehouseClick: () => void;
   onTabContent: () => React.ReactNode;
 }
 
@@ -83,17 +84,7 @@ function KPICard({ icon, label, value, color }: { icon: React.ReactNode; label: 
 }
 
 // ─── Setup Required Panel (replaces tabs for not-configured warehouses) ───────
-const SETUP_OPTIONS: { method: SetupMethod; icon: typeof Sparkles; label: string; description: string }[] = [
-  { method: 'flowone-template',   icon: Sparkles,  label: 'Use flowOne Template',           description: 'Recommended — industry-standard hierarchy, ready to use' },
-  { method: 'published-template', icon: BookOpen,  label: 'Use My Published Template',       description: 'Reuse a configuration you\'ve already published' },
-  { method: 'draft-template',     icon: FileEdit,  label: 'Continue Draft Template',         description: 'Pick up from a saved draft template' },
-  { method: 'scratch',            icon: Wrench,    label: 'Build From Scratch',              description: 'Full control — define every level and rule yourself' },
-  { method: 'import',             icon: Upload,    label: 'Import Existing Configuration',   description: 'Upload a JSON or Excel file from another system' },
-];
-
-function SetupRequiredPanel({ warehouseName, onSetupClick }: { warehouseName: string; onSetupClick: (method: SetupMethod) => void }) {
-  const [selected, setSelected] = useState<SetupMethod>('flowone-template');
-
+function SetupRequiredPanel({ warehouseName, onStartSetup }: { warehouseName: string; onStartSetup: () => void }) {
   return (
     <div className="flex items-start justify-center py-10 px-8">
       <div className="w-full max-w-xl">
@@ -106,47 +97,13 @@ function SetupRequiredPanel({ warehouseName, onSetupClick }: { warehouseName: st
           </p>
         </div>
 
-        {/* Options */}
-        <div className="flex flex-col gap-2 mb-6">
-          {SETUP_OPTIONS.map(({ method, icon: Icon, label, description }) => {
-            const isSelected = selected === method;
-            return (
-              <button
-                key={method}
-                onClick={() => setSelected(method)}
-                className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
-                  isSelected
-                    ? 'border-[#5C1F3D] bg-[#f9f4f7] ring-1 ring-[#5C1F3D]/20'
-                    : 'border-[#d1def0] bg-white hover:border-gray-300'
-                }`}
-              >
-                {/* Radio dot */}
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  isSelected ? 'border-[#5C1F3D]' : 'border-gray-300'
-                }`}>
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-[#5C1F3D]" />}
-                </div>
-                {/* Icon */}
-                <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-[#5C1F3D]' : 'bg-gray-100'}`}>
-                  <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
-                </div>
-                {/* Text */}
-                <div className="min-w-0">
-                  <p className={`text-sm font-medium ${isSelected ? 'text-[#5C1F3D]' : 'text-[#172B4D]'}`}>{label}</p>
-                  <p className="text-xs text-gray-500 truncate">{description}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
         {/* Primary Action */}
         <button
-          onClick={() => onSetupClick(selected)}
-          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors"
+          onClick={onStartSetup}
+          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
         >
           <PlayCircle className="w-4 h-4" />
-          Start Warehouse Setup
+          Choose Setup Method & Configure
         </button>
       </div>
     </div>
@@ -250,7 +207,7 @@ function DraftResumePanel({
 // ─── Main EntryScreen ─────────────────────────────────────────────────────────
 export function EntryScreen({
   config, selectedWarehouse, onWarehouseChange,
-  activeTab, onTabChange, onSetupClick, onTabContent,
+  activeTab, onTabChange, onSetupClick, onNewWarehouseClick, onTabContent,
 }: EntryScreenProps) {
   const { kpis, configStatus, publishStatus, warehouseName } = config;
   const isDash = configStatus === 'not-configured';
@@ -274,7 +231,7 @@ export function EntryScreen({
           </div>
           {/* New Warehouse — unchanged position, style, behaviour */}
           <button
-            onClick={() => onSetupClick(undefined, 1)}
+            onClick={onNewWarehouseClick}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -316,7 +273,7 @@ export function EntryScreen({
           <div className="flex-1 bg-white rounded-lg border border-[#d1def0] overflow-y-auto">
             <SetupRequiredPanel
               warehouseName={warehouseName}
-              onSetupClick={(method) => onSetupClick(method, 1)}
+              onStartSetup={onNewWarehouseClick}
             />
           </div>
         )}
@@ -328,9 +285,9 @@ export function EntryScreen({
               warehouseName={warehouseName}
               lastModified="Aug 1, 2026 at 3:42 PM"
               progress={65}
-              onResume={() => onSetupClick('scratch', 2)}
-              onDuplicate={() => onSetupClick('draft-template', 1)}
-              onPublish={() => onSetupClick('scratch', 8)}
+              onResume={() => onSetupClick('scratch', 1)}
+              onDuplicate={() => onNewWarehouseClick()}
+              onPublish={() => onSetupClick('scratch', 7)}
               onDiscard={() => {/* mock: no-op */}}
             />
           </div>

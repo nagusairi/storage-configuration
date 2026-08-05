@@ -1,7 +1,6 @@
 import React from 'react';
 import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { WizardStep, WizardState } from './types';
-import { Step1SetupMethod } from './steps/Step1SetupMethod';
 import { Step2HierarchyDesigner } from './steps/Step2HierarchyDesigner';
 import { Step3LevelProperties } from './steps/Step3LevelProperties';
 import { Step4ZoneLayouts } from './steps/Step4ZoneLayouts';
@@ -18,29 +17,26 @@ interface SetupWizardProps {
 }
 
 const STEPS: { id: WizardStep; label: string; short: string }[] = [
-  { id: 1, label: 'Setup Method', short: 'Method' },
-  { id: 2, label: 'Hierarchy Model', short: 'Hierarchy' },
-  { id: 3, label: 'Level Properties', short: 'Properties' },
-  { id: 4, label: 'Zone Layouts', short: 'Zones' },
-  { id: 5, label: 'Generate Layout', short: 'Generate' },
-  { id: 6, label: 'Naming & Rules', short: 'Rules' },
-  { id: 7, label: 'Validation', short: 'Validate' },
-  { id: 8, label: 'Review & Publish', short: 'Publish' },
+  { id: 1, label: 'Hierarchy Model', short: 'Hierarchy' },
+  { id: 2, label: 'Level Properties', short: 'Properties' },
+  { id: 3, label: 'Zone Layouts', short: 'Zones' },
+  { id: 4, label: 'Generate Layout', short: 'Generate' },
+  { id: 5, label: 'Naming & Rules', short: 'Rules' },
+  { id: 6, label: 'Validation', short: 'Validate' },
+  { id: 7, label: 'Review & Publish', short: 'Publish' },
 ];
 
 export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWizardProps) {
-  const currentStepIndex = STEPS.findIndex(s => s.id === state.currentStep);
-
   const goToStep = (step: WizardStep) => {
     onChange({ ...state, currentStep: step });
   };
 
   const goNext = () => {
-    if (state.currentStep < 8) goToStep((state.currentStep + 1) as WizardStep);
+    if (state.currentStep < 7) goToStep((state.currentStep + 1) as WizardStep);
   };
 
   const goPrev = () => {
-    if (state.currentStep === 2 && state.returnToStep) {
+    if (state.currentStep === 1 && state.returnToStep) {
       goToStep(state.returnToStep);
       return;
     }
@@ -49,8 +45,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
 
   const renderStep = () => {
     switch (state.currentStep) {
-      case 1: return <Step1SetupMethod state={state} onChange={onChange} onNext={goNext} />;
-      case 2: return (
+      case 1: return (
         <Step2HierarchyDesigner
           state={state}
           onChange={onChange}
@@ -63,12 +58,12 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
           }}
         />
       );
-      case 3: return <Step3LevelProperties state={state} onChange={onChange} />;
-      case 4: return <Step4ZoneLayouts state={state} onChange={onChange} />;
-      case 5: return <Step5GenerateLayout state={state} onChange={onChange} />;
-      case 6: return <Step6NamingRules state={state} onChange={onChange} />;
-      case 7: return <Step7Validation state={state} onChange={onChange} onGoToStep={goToStep} />;
-      case 8: return <Step8ReviewPublish state={state} onChange={onChange} onClose={onClose} warehouseName={warehouseName} />;
+      case 2: return <Step3LevelProperties state={state} onChange={onChange} />;
+      case 3: return <Step4ZoneLayouts state={state} onChange={onChange} />;
+      case 4: return <Step5GenerateLayout state={state} onChange={onChange} />;
+      case 5: return <Step6NamingRules state={state} onChange={onChange} />;
+      case 6: return <Step7Validation state={state} onChange={onChange} onGoToStep={goToStep} />;
+      case 7: return <Step8ReviewPublish state={state} onChange={onChange} onClose={onClose} warehouseName={warehouseName} />;
       default: return null;
     }
   };
@@ -78,13 +73,13 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       {/* Wizard Header */}
       <div className="bg-white border-b border-[#d1def0] px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-sm font-semibold text-[#172B4D]">Warehouse Setup</h2>
+          <h2 className="text-sm font-semibold text-[#172B4D]">Warehouse Configuration</h2>
           <p className="text-xs text-gray-500 mt-0.5">{warehouseName}</p>
         </div>
         <button
           onClick={onClose}
           className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-500"
-          title="Exit setup"
+          title="Exit wizard"
         >
           <X className="w-4 h-4" />
         </button>
@@ -134,7 +129,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       <div className="bg-white border-t border-[#d1def0] px-6 py-3 flex items-center justify-between flex-shrink-0">
         <button
           onClick={goPrev}
-          disabled={state.currentStep === 1}
+          disabled={state.currentStep === 1 && !state.returnToStep}
           className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -147,7 +142,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
             Save Draft
           </button>
 
-          {state.currentStep < 8 ? (
+          {state.currentStep < 7 ? (
             <button
               onClick={goNext}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded transition-colors"

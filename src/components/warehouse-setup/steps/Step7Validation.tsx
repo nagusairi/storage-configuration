@@ -7,12 +7,12 @@ function runValidation(state: WizardState): ValidationResult[] {
   const results: ValidationResult[] = [];
   const levels = state.hierarchyModel.levels;
 
-  results.push({ id: 'v1', check: 'Hierarchy Defined', severity: levels.length > 0 ? 'pass' : 'error', message: levels.length > 0 ? `${levels.length} levels defined` : 'No hierarchy levels defined.', fixStep: 2 });
-  results.push({ id: 'v2', check: 'All Levels Named', severity: levels.every(l => l.name.trim().length > 0) ? 'pass' : 'error', message: levels.every(l => l.name.trim().length > 0) ? 'All levels have names' : 'Some levels are missing names.', fixStep: 3 });
-  results.push({ id: 'v3', check: 'Zones Configured', severity: state.zones.length > 0 ? 'pass' : 'warning', message: state.zones.length > 0 ? `${state.zones.length} zone(s) configured` : 'No zones have been added. Locations cannot be generated.', fixStep: 4 });
-  results.push({ id: 'v4', check: 'Code Prefix Conflicts', severity: levels.length > 1 && new Set(levels.map(l => l.codePrefix)).size !== levels.length ? 'error' : 'pass', message: levels.length > 1 && new Set(levels.map(l => l.codePrefix)).size !== levels.length ? 'Duplicate code prefixes detected.' : 'No duplicate code prefixes.', fixStep: 3 });
-  results.push({ id: 'v5', check: 'Generation Counts', severity: state.zones.some(z => z.generation.levels.length === 0) ? 'warning' : 'pass', message: state.zones.some(z => z.generation.levels.length === 0) ? 'Some zones have no generation counts set. Defaults will be used.' : 'All zones have generation counts.', fixStep: 5 });
-  results.push({ id: 'v6', check: 'Naming Rules', severity: state.namingRules.prefix.trim().length > 0 ? 'pass' : 'warning', message: state.namingRules.prefix.trim().length > 0 ? 'Naming rules configured' : 'Location code prefix is empty.', fixStep: 6 });
+  results.push({ id: 'v1', check: 'Hierarchy Defined', severity: levels.length > 0 ? 'pass' : 'error', message: levels.length > 0 ? `${levels.length} levels defined` : 'No hierarchy levels defined.', fixStep: 1 });
+  results.push({ id: 'v2', check: 'All Levels Named', severity: levels.every(l => l.name.trim().length > 0) ? 'pass' : 'error', message: levels.every(l => l.name.trim().length > 0) ? 'All levels have names' : 'Some levels are missing names.', fixStep: 2 });
+  results.push({ id: 'v3', check: 'Zones Configured', severity: state.zones.length > 0 ? 'pass' : 'warning', message: state.zones.length > 0 ? `${state.zones.length} zone(s) configured` : 'No zones have been added. Locations cannot be generated.', fixStep: 3 });
+  results.push({ id: 'v4', check: 'Code Prefix Conflicts', severity: levels.length > 1 && new Set(levels.map(l => l.codePrefix)).size !== levels.length ? 'error' : 'pass', message: levels.length > 1 && new Set(levels.map(l => l.codePrefix)).size !== levels.length ? 'Duplicate code prefixes detected.' : 'No duplicate code prefixes.', fixStep: 2 });
+  results.push({ id: 'v5', check: 'Generation Counts', severity: state.zones.some(z => z.generation.levels.length === 0) ? 'warning' : 'pass', message: state.zones.some(z => z.generation.levels.length === 0) ? 'Some zones have no generation counts set. Defaults will be used.' : 'All zones have generation counts.', fixStep: 4 });
+  results.push({ id: 'v6', check: 'Naming Rules', severity: state.namingRules.prefix.trim().length > 0 ? 'pass' : 'warning', message: state.namingRules.prefix.trim().length > 0 ? 'Naming rules configured' : 'Location code prefix is empty.', fixStep: 5 });
 
   return results;
 }
