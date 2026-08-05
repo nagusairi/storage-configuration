@@ -145,7 +145,9 @@ export function Sidebar({ expanded, onToggle, onOpenAssistant, activeModuleKey, 
       categoryIcon: LayoutDashboard,
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', active: location.pathname === '/dashboard' },
-        { icon: Settings, label: 'Storage Configuration', path: '/dashboard/storage-configuration', active: location.pathname === '/dashboard/storage-configuration' }
+        { icon: Settings, label: 'Storage Configuration', path: '/dashboard/storage-configuration', active: location.pathname === '/dashboard/storage-configuration' },
+        { icon: Settings, label: 'Storage Configuration v2', path: '/dashboard/storage-configuration-v2', active: location.pathname === '/dashboard/storage-configuration-v2' },
+        { icon: Settings, label: 'Storage Configuration v3', path: '/dashboard/storage-configuration-v3', active: location.pathname === '/dashboard/storage-configuration-v3' }
       ]
     },
     {

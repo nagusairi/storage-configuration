@@ -20,6 +20,8 @@ const InventoryReports = lazy(() => import('../pages/inventory/InventoryReports'
 const InventoryAlerts = lazy(() => import('../pages/inventory/InventoryAlerts').then(m => ({ default: m.InventoryAlerts })));
 const StockAdjustmentDraft = lazy(() => import('../pages/inventory/StockAdjustmentDraft').then(m => ({ default: m.StockAdjustmentDraft })));
 const StorageConfiguration = lazy(() => import('../pages/storage-configuration/StorageConfiguration'));
+const StorageConfigurationV2 = lazy(() => import('../pages/storage-configuration/StorageConfigurationV2'));
+const StorageConfigurationV3 = lazy(() => import('../pages/storage-configuration/StorageConfigurationV3'));
 
 // Loading component
 const PageLoader = () => (
@@ -296,6 +298,28 @@ export const router = createBrowserRouter([
             handle: {
               title: 'Storage Configuration',
               breadcrumbs: ['Dashboard', 'Storage Configuration'],
+              moduleKey: 'warehouse-management',
+              sidebarGroup: 'warehouse'
+            } as RouteMetadata
+          },
+          // Storage Configuration V2 Route
+          {
+            path: 'storage-configuration-v2',
+            element: <LazyWrapper><StorageConfigurationV2 /></LazyWrapper>,
+            handle: {
+              title: 'Storage Configuration v2',
+              breadcrumbs: ['Dashboard', 'Storage Configuration v2'],
+              moduleKey: 'warehouse-management',
+              sidebarGroup: 'warehouse'
+            } as RouteMetadata
+          },
+          // Storage Configuration V3 Route
+          {
+            path: 'storage-configuration-v3',
+            element: <LazyWrapper><StorageConfigurationV3 /></LazyWrapper>,
+            handle: {
+              title: 'Storage Configuration v3',
+              breadcrumbs: ['Dashboard', 'Storage Configuration v3'],
               moduleKey: 'warehouse-management',
               sidebarGroup: 'warehouse'
             } as RouteMetadata

@@ -3,7 +3,7 @@ import { CodeRuleEngine } from '../../components/storage/CodeRuleEngine';
 import { StorageTemplates } from '../../components/storage/StorageTemplates';
 import { ZonesTab } from '../../components/storage/ZonesTab';
 import { useState } from 'react';
-import { Plus, Search, Filter, Grid3x3, List, Table, LayoutGrid, Ban, MapPin } from 'lucide-react';
+import { Plus, Search, Filter, Grid3x3, List, Table, LayoutGrid, Ban, MapPin, ChevronDown } from 'lucide-react';
 import { ModulePageTemplate } from '../../components/layouts/ModulePageTemplate';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { SearchableWarehouseSelect } from '../../components/ui/SearchableWarehouseSelect';
@@ -11,7 +11,7 @@ import { StyledSelect, MenuItem } from '../../components/ui/StyledSelect';
 import { mockStorageHierarchyByWarehouse, mockWarehouses } from '../../data/mockStorageData';
 import { ViewMode } from '../../types/ViewMode';
 
-export default function StorageConfiguration() {
+export default function StorageConfigurationV2() {
   const { sidebarExpanded } = useSidebar();
   const [selectedWarehouse, setSelectedWarehouse] = useState('all');
   const [activeTab, setActiveTab] = useState('storage-hierarchy');
@@ -19,6 +19,7 @@ export default function StorageConfiguration() {
   const [viewMode, setViewMode] = useState<ViewMode>('hierarchy');
   const [showFilters, setShowFilters] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMetricsExpanded, setIsMetricsExpanded] = useState(false);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setIsScrolled(e.currentTarget.scrollTop > 10);
@@ -48,7 +49,7 @@ export default function StorageConfiguration() {
     setShowFilters(false);
   };
 
-  const breadcrumbs = ['Dashboard', 'Storage Configuration'];
+  const breadcrumbs = ['Dashboard', 'Storage Configuration v2'];
 
   const tabs = [
     { id: 'storage-hierarchy', label: 'Storage Hierarchy' },
@@ -74,172 +75,160 @@ export default function StorageConfiguration() {
         onScroll={handleScroll}
         className="storage-config-page-wrapper flex flex-col h-full bg-[#f7f8f9] p-3 overflow-y-auto"
       >
-        {/* Warehouse Selector and Info */}
-        <div className="warehouse-selector-card-wrapper px-6 py-4 bg-white rounded-lg mb-3 shadow-sm">
-          <div className="warehouse-grid-wrapper flex gap-6">
-            {/* Left Column - Warehouse Dropdown (30%) */}
-            <div className="warehouse-select-col" style={{ width: '30%' }}>
-              <label className="block text-sm text-gray-700 mb-2">Warehouse</label>
-              <SearchableWarehouseSelect
-                warehouses={mockWarehouses}
-                value={selectedWarehouse}
-                onChange={handleWarehouseChange}
-                includeAllOption={true}
-              />
+        {/* Option 3: Collapsible Summary Card */}
+        <div className="warehouse-selector-card-wrapper px-4 py-2.5 bg-white rounded-lg mb-3 shadow-sm">
+          {/* Header Row (Always Visible) */}
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Warehouse Select */}
+            <div className="warehouse-select-col flex items-center gap-2 flex-shrink-0">
+              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Warehouse:</label>
+              <div className="w-[200px]">
+                <SearchableWarehouseSelect
+                  warehouses={mockWarehouses}
+                  value={selectedWarehouse}
+                  onChange={handleWarehouseChange}
+                  includeAllOption={true}
+                />
+              </div>
             </div>
 
-            {/* Right Column - Warehouse Info (70%) */}
-            {currentWarehouseData && (
-              <div className="warehouse-metrics-col" style={{ width: '70%' }}>
-                <div className="flex items-start gap-4 pt-7">
-                  {/* Location */}
-                  <div style={{ flex: '1.5' }}>
-                    <p className="text-xs text-blue-600 mb-0.5">Location</p>
-                    <p className="text-sm text-blue-900">{currentWarehouseData.attributes?.location}</p>
-                  </div>
-                  
-                  {/* Total Capacity */}
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-600 mb-0.5">Total Capacity</p>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-blue-900">
-                        {currentWarehouseData.capacity.occupied.toLocaleString()} / {currentWarehouseData.capacity.total.toLocaleString()} {currentWarehouseData.capacity.unit}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 bg-gray-200 rounded-sm overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-orange-500 transition-all"
-                            style={{ width: `${Math.round((currentWarehouseData.capacity.occupied / currentWarehouseData.capacity.total) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {Math.round((currentWarehouseData.capacity.occupied / currentWarehouseData.capacity.total) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Available Capacity */}
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-600 mb-0.5">Available Capacity</p>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-blue-900">
-                        {(currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied).toLocaleString()} {currentWarehouseData.capacity.unit}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 bg-gray-200 rounded-sm overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-green-500 transition-all"
-                            style={{ width: `${Math.round(((currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied) / currentWarehouseData.capacity.total) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {Math.round(((currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied) / currentWarehouseData.capacity.total) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Zone Utilization % */}
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-600 mb-0.5">Zone Utilization %</p>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-blue-900">
-                        {currentWarehouseData.attributes?.zoneUtilization || '78'}% Avg
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 bg-gray-200 rounded-sm overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-blue-500 transition-all"
-                            style={{ width: `${currentWarehouseData.attributes?.zoneUtilization || 78}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {currentWarehouseData.attributes?.zoneUtilization || '78'}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Right: Quick Stats & Toggle Button */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="hidden sm:flex items-center gap-3 text-gray-600">
+                <span>Occupied: <strong className="text-[#FF5630] font-semibold">{selectedWarehouse === 'all' ? `${Math.round((aggregateMetrics.occupiedCapacity / aggregateMetrics.totalCapacity) * 100)}%` : currentWarehouseData ? `${Math.round((currentWarehouseData.capacity.occupied / currentWarehouseData.capacity.total) * 100)}%` : '0%'}</strong></span>
+                <span>Available: <strong className="text-[#36B37E] font-semibold">{selectedWarehouse === 'all' ? `${Math.round(((aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity) / aggregateMetrics.totalCapacity) * 100)}%` : currentWarehouseData ? `${Math.round(((currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied) / currentWarehouseData.capacity.total) * 100)}%` : '0%'}</strong></span>
               </div>
-            )}
 
-            {/* All Warehouses Metrics (shown when selectedWarehouse === 'all') */}
-            {selectedWarehouse === 'all' && (
-              <div className="warehouse-metrics-col" style={{ width: '70%' }}>
-                <div className="flex items-start gap-4 pt-7">
-                  {/* Total Warehouses */}
-                  <div style={{ flex: '1.5' }}>
-                    <p className="text-xs text-blue-600 mb-0.5">Total Warehouses</p>
-                    <p className="text-sm text-blue-900">{aggregateMetrics.totalWarehouses}</p>
-                  </div>
-                  
-                  {/* Total Capacity */}
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-600 mb-0.5">Total Capacity</p>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-blue-900">
-                        {aggregateMetrics.occupiedCapacity.toLocaleString()} / {aggregateMetrics.totalCapacity.toLocaleString()} {aggregateMetrics.capacityUnit}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 bg-gray-200 rounded-sm overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-orange-500 transition-all"
-                            style={{ width: `${Math.round((aggregateMetrics.occupiedCapacity / aggregateMetrics.totalCapacity) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {Math.round((aggregateMetrics.occupiedCapacity / aggregateMetrics.totalCapacity) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Available Capacity */}
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-600 mb-0.5">Available Capacity</p>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-blue-900">
-                        {(aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity).toLocaleString()} {aggregateMetrics.capacityUnit}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 bg-gray-200 rounded-sm overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-green-500 transition-all"
-                            style={{ width: `${Math.round(((aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity) / aggregateMetrics.totalCapacity) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {Math.round(((aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity) / aggregateMetrics.totalCapacity) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Zone Utilization % */}
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-600 mb-0.5">Zone Utilization %</p>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-blue-900">
-                        {aggregateMetrics.avgZoneUtilization}% Avg
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 bg-gray-200 rounded-sm overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-blue-500 transition-all"
-                            style={{ width: `${aggregateMetrics.avgZoneUtilization}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {aggregateMetrics.avgZoneUtilization}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+              <div className="h-4 w-[1px] bg-gray-200 hidden sm:block" />
+
+              <button
+                onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
+                className="flex items-center gap-1.5 text-xs text-[#0052CC] font-medium px-2.5 py-1 rounded bg-[#F4F5F7] hover:bg-[#EBECF0] transition-colors"
+              >
+                <span>{isMetricsExpanded ? 'Hide Details' : 'Show Details'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMetricsExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
           </div>
+
+          {/* Collapsible Expanded Detailed Progress Bars */}
+          {isMetricsExpanded && (
+            <div className="pt-3 mt-2.5 border-t border-gray-100 flex items-center justify-between gap-4 text-xs overflow-x-auto animate-in slide-in-from-top-1">
+              {selectedWarehouse === 'all' ? (
+                <>
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Total Warehouses:</span>
+                    <span className="font-semibold text-[#172B4D]">{aggregateMetrics.totalWarehouses}</span>
+                  </div>
+
+                  <div className="h-3.5 w-[1px] bg-gray-200" />
+
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Total Capacity:</span>
+                    <span className="font-semibold text-[#172B4D]">
+                      {aggregateMetrics.occupiedCapacity.toLocaleString()} / {aggregateMetrics.totalCapacity.toLocaleString()} {aggregateMetrics.capacityUnit}
+                    </span>
+                    <div className="w-16 h-1.5 bg-[#E9EEF4] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#FF5630] rounded-full transition-all"
+                        style={{ width: `${Math.round((aggregateMetrics.occupiedCapacity / aggregateMetrics.totalCapacity) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="font-medium text-[#5E6C84]">
+                      {Math.round((aggregateMetrics.occupiedCapacity / aggregateMetrics.totalCapacity) * 100)}%
+                    </span>
+                  </div>
+
+                  <div className="h-3.5 w-[1px] bg-gray-200" />
+
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Available:</span>
+                    <span className="font-semibold text-[#172B4D]">
+                      {(aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity).toLocaleString()} {aggregateMetrics.capacityUnit}
+                    </span>
+                    <div className="w-16 h-1.5 bg-[#E9EEF4] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#36B37E] rounded-full transition-all"
+                        style={{ width: `${Math.round(((aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity) / aggregateMetrics.totalCapacity) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="font-medium text-[#5E6C84]">
+                      {Math.round(((aggregateMetrics.totalCapacity - aggregateMetrics.occupiedCapacity) / aggregateMetrics.totalCapacity) * 100)}%
+                    </span>
+                  </div>
+
+                  <div className="h-3.5 w-[1px] bg-gray-200" />
+
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Utilization:</span>
+                    <span className="font-semibold text-[#172B4D]">{aggregateMetrics.avgZoneUtilization}% Avg</span>
+                    <div className="w-16 h-1.5 bg-[#E9EEF4] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#0065FF] rounded-full transition-all"
+                        style={{ width: `${aggregateMetrics.avgZoneUtilization}%` }}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : currentWarehouseData ? (
+                <>
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Location:</span>
+                    <span className="font-semibold text-[#172B4D]">{currentWarehouseData.attributes?.location}</span>
+                  </div>
+
+                  <div className="h-3.5 w-[1px] bg-gray-200" />
+
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Total Capacity:</span>
+                    <span className="font-semibold text-[#172B4D]">
+                      {currentWarehouseData.capacity.occupied.toLocaleString()} / {currentWarehouseData.capacity.total.toLocaleString()} {currentWarehouseData.capacity.unit}
+                    </span>
+                    <div className="w-16 h-1.5 bg-[#E9EEF4] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#FF5630] rounded-full transition-all"
+                        style={{ width: `${Math.round((currentWarehouseData.capacity.occupied / currentWarehouseData.capacity.total) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="font-medium text-[#5E6C84]">
+                      {Math.round((currentWarehouseData.capacity.occupied / currentWarehouseData.capacity.total) * 100)}%
+                    </span>
+                  </div>
+
+                  <div className="h-3.5 w-[1px] bg-gray-200" />
+
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Available:</span>
+                    <span className="font-semibold text-[#172B4D]">
+                      {(currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied).toLocaleString()} {currentWarehouseData.capacity.unit}
+                    </span>
+                    <div className="w-16 h-1.5 bg-[#E9EEF4] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#36B37E] rounded-full transition-all"
+                        style={{ width: `${Math.round(((currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied) / currentWarehouseData.capacity.total) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="font-medium text-[#5E6C84]">
+                      {Math.round(((currentWarehouseData.capacity.total - currentWarehouseData.capacity.occupied) / currentWarehouseData.capacity.total) * 100)}%
+                    </span>
+                  </div>
+
+                  <div className="h-3.5 w-[1px] bg-gray-200" />
+
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-[#0052CC]">Utilization:</span>
+                    <span className="font-semibold text-[#172B4D]">{currentWarehouseData.attributes?.zoneUtilization || 78}% Avg</span>
+                    <div className="w-16 h-1.5 bg-[#E9EEF4] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#0065FF] rounded-full transition-all"
+                        style={{ width: `${currentWarehouseData.attributes?.zoneUtilization || 78}%` }}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          )}
         </div>
 
         {/* Tab Navigation */}

@@ -7,18 +7,29 @@ interface Warehouse {
   location: string;
 }
 
+type ConfigStatus = 'not-configured' | 'draft' | 'published';
+
+const STATUS_META: Record<ConfigStatus, { dot: string; label: string }> = {
+  published:      { dot: 'bg-green-500',  label: 'Published' },
+  draft:          { dot: 'bg-orange-400', label: 'Draft' },
+  'not-configured': { dot: 'bg-red-400',  label: 'Setup Required' },
+};
+
 interface SearchableWarehouseSelectProps {
   warehouses: Warehouse[];
   value: string;
   onChange: (warehouseId: string) => void;
   includeAllOption?: boolean;
+  /** Optional map of warehouseId → configStatus for inline status badges */
+  statusByWarehouseId?: Record<string, ConfigStatus>;
 }
 
 export function SearchableWarehouseSelect({ 
   warehouses, 
   value, 
   onChange,
-  includeAllOption = true 
+  includeAllOption = true,
+  statusByWarehouseId,
 }: SearchableWarehouseSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -104,32 +115,43 @@ export function SearchableWarehouseSelect({
                 No warehouses found
               </div>
             ) : (
-              filteredOptions.map((warehouse) => (
-                <button
-                  key={warehouse.id}
-                  onClick={() => handleSelect(warehouse.id)}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${
-                    value === warehouse.id ? 'bg-purple-50 text-[#5C1F3D]' : 'text-gray-900'
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className={`font-medium truncate ${value === warehouse.id ? 'text-[#5C1F3D]' : 'text-gray-900'}`}>
-                      {warehouse.name}
+              filteredOptions.map((warehouse) => {
+                const status = statusByWarehouseId?.[warehouse.id];
+                const statusMeta = status ? STATUS_META[status] : null;
+                const isSelected = value === warehouse.id;
+                return (
+                  <button
+                    key={warehouse.id}
+                    onClick={() => handleSelect(warehouse.id)}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                      isSelected ? 'bg-purple-50 text-[#5C1F3D]' : 'text-gray-900'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium truncate ${isSelected ? 'text-[#5C1F3D]' : 'text-gray-900'}`}>
+                        {warehouse.name}
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <MapPin className={`w-3 h-3 flex-shrink-0 ${isSelected ? 'text-[#5C1F3D]' : 'text-gray-500'}`} />
+                        <span className={`text-xs truncate ${isSelected ? 'text-[#5C1F3D]' : 'text-gray-500'}`}>
+                          {warehouse.location}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <MapPin className={`w-3 h-3 flex-shrink-0 ${value === warehouse.id ? 'text-[#5C1F3D]' : 'text-gray-500'}`} />
-                      <span className={`text-xs truncate ${value === warehouse.id ? 'text-[#5C1F3D]' : 'text-gray-500'}`}>
-                        {warehouse.location}
-                      </span>
+                    <div className="ml-2 flex-shrink-0 flex items-center gap-2">
+                      {statusMeta && (
+                        <span className="flex items-center gap-1">
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusMeta.dot}`} />
+                          <span className="text-[10px] text-gray-500 whitespace-nowrap">{statusMeta.label}</span>
+                        </span>
+                      )}
+                      {isSelected && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#5C1F3D]" />
+                      )}
                     </div>
-                  </div>
-                  {value === warehouse.id && (
-                    <div className="ml-2 flex-shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#5C1F3D]" />
-                    </div>
-                  )}
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
