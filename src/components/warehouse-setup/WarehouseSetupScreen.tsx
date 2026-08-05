@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
-  Sparkles, Layers, Upload, BookOpen, FileEdit,
-  Search, ArrowLeft, ArrowRight, Check
+  Sparkles, Layers, Upload, BookOpen, Search,
+  ArrowLeft, ArrowRight, Check, ChevronDown,
+  Warehouse, Snowflake, Factory, Store, ShieldCheck, Building2
 } from 'lucide-react';
 import type { SetupMethod } from './types';
 import { MOCK_TEMPLATES } from './mockData';
@@ -13,12 +14,48 @@ interface WarehouseSetupScreenProps {
 }
 
 const FLOWONE_TEMPLATES = [
-  { id: 'flowone-dc', name: 'Distribution Center', description: 'Standard high-volume DC layout with Pallet Racks, Shelving & Bulk storage.', badge: 'Recommended' },
-  { id: 'flowone-cold', name: 'Cold Storage', description: 'Temperature-controlled multi-zone layout with freezer racks & staging.' },
-  { id: 'flowone-mfg', name: 'Manufacturing', description: 'WIP buffer zones, raw material storage & production line feed bins.' },
-  { id: 'flowone-retail', name: 'Retail', description: 'Fast-pick forward locations, backroom storage & high-density shelving.' },
-  { id: 'flowone-pharma', name: 'Pharma', description: 'Secure vault storage, quarantine zones & lot-tracked bin hierarchy.' },
-  { id: 'flowone-3pl', name: '3PL', description: 'Multi-tenant client partition storage with flexible dynamic allocation.' },
+  {
+    id: 'flowone-dc',
+    name: 'Distribution Center',
+    icon: Warehouse,
+    description: 'High-volume DC layout with Pallet Racks & Bulk storage',
+    badge: 'Recommended',
+  },
+  {
+    id: 'flowone-cold',
+    name: 'Cold Storage',
+    icon: Snowflake,
+    description: 'Temperature-controlled multi-zone layout & freezer staging',
+    badge: null,
+  },
+  {
+    id: 'flowone-mfg',
+    name: 'Manufacturing',
+    icon: Factory,
+    description: 'WIP buffer zones & production line feed storage',
+    badge: null,
+  },
+  {
+    id: 'flowone-retail',
+    name: 'Retail',
+    icon: Store,
+    description: 'Fast-pick forward locations & backroom high-density shelving',
+    badge: null,
+  },
+  {
+    id: 'flowone-pharma',
+    name: 'Pharma',
+    icon: ShieldCheck,
+    description: 'Secure vault storage, quarantine & lot-tracked bin hierarchy',
+    badge: null,
+  },
+  {
+    id: 'flowone-3pl',
+    name: '3PL',
+    icon: Building2,
+    description: 'Multi-tenant client partitions with dynamic location allocation',
+    badge: null,
+  },
 ];
 
 export function WarehouseSetupScreen({
@@ -30,15 +67,31 @@ export function WarehouseSetupScreen({
   const [selectedFlowOneSubId, setSelectedFlowOneSubId] = useState<string>('flowone-dc');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const selectPrimary = (method: SetupMethod) => {
     setSelectedMethod(method);
     setSelectedTemplateId(undefined);
+    if (method !== 'flowone-template') setIsDropdownOpen(false);
   };
 
   const selectTemplate = (method: 'published-template' | 'draft-template', templateId: string) => {
     setSelectedMethod(method);
     setSelectedTemplateId(templateId);
+    setIsDropdownOpen(false);
   };
 
   const filteredTemplates = MOCK_TEMPLATES.filter(t =>
@@ -53,6 +106,9 @@ export function WarehouseSetupScreen({
   const isFlowOneSelected = selectedMethod === 'flowone-template' && !selectedTemplateId;
   const isScratchSelected = selectedMethod === 'scratch' && !selectedTemplateId;
   const isImportSelected = selectedMethod === 'import' && !selectedTemplateId;
+
+  const currentFlowOneTpl = FLOWONE_TEMPLATES.find(t => t.id === selectedFlowOneSubId) ?? FLOWONE_TEMPLATES[0];
+  const CurrentIcon = currentFlowOneTpl.icon;
 
   return (
     <div className="flex flex-col h-full bg-[#f7f8f9] rounded-lg border border-[#d1def0] overflow-hidden">
@@ -90,105 +146,123 @@ export function WarehouseSetupScreen({
           </p>
         </div>
 
-        {/* Primary Setup Options (3 Cards Grid) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-start">
-          {/* Card 1: flowOne Templates (Inline Expanding Card) */}
+        {/* Primary Setup Options (3 Cards Grid - Uniform Height) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* Card 1: flowOne Templates with Stylish Custom Dropdown */}
           <div
-            className={`group text-left rounded-xl border-2 transition-all flex flex-col justify-between relative bg-white transition-all ${
+            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[190px] ${
               isFlowOneSelected
-                ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md md:col-span-1'
+                ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md'
                 : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
             }`}
+            onClick={() => {
+              if (!isFlowOneSelected) selectPrimary('flowone-template');
+            }}
           >
-            <button
-              onClick={() => selectPrimary('flowone-template')}
-              className="p-5 w-full text-left flex flex-col justify-between min-h-[160px]"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between w-full mb-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#5C1F3D] shadow-sm">
-                  <Sparkles className="w-5 h-5 text-white" />
+            {/* Top Row: Icon + Checkmark/Badge */}
+            <div className="flex items-center justify-between w-full mb-2">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#5C1F3D] shadow-sm">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              {isFlowOneSelected ? (
+                <div className="w-5 h-5 rounded-full bg-[#5C1F3D] flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
-                {isFlowOneSelected ? (
-                  <div className="w-5 h-5 rounded-full bg-[#5C1F3D] flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
-                ) : (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#5C1F3D] text-white">
-                    Recommended
+              ) : (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#5C1F3D] text-white">
+                  Recommended
+                </span>
+              )}
+            </div>
+
+            {/* Title & Category Description */}
+            <div>
+              <h3 className="text-sm font-bold text-[#172B4D] mb-0.5 group-hover:text-[#5C1F3D] transition-colors">
+                flowOne Templates
+              </h3>
+              <p className="text-xs text-gray-500 leading-tight mb-3">
+                Industry-standard warehouse blueprints.
+              </p>
+            </div>
+
+            {/* Custom Dropdown Trigger */}
+            <div className="relative w-full" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectPrimary('flowone-template');
+                  setIsDropdownOpen(prev => !prev);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left transition-all ${
+                  isDropdownOpen
+                    ? 'border-[#5C1F3D] bg-white ring-2 ring-[#5C1F3D]/10'
+                    : 'border-gray-200 bg-gray-50/70 hover:bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <CurrentIcon className="w-4 h-4 text-[#5C1F3D] flex-shrink-0" />
+                  <span className="text-xs font-semibold text-[#172B4D] truncate">
+                    {currentFlowOneTpl.name}
                   </span>
-                )}
-              </div>
+                  {currentFlowOneTpl.badge && (
+                    <span className="text-[9px] font-bold bg-[#5C1F3D] text-white px-1.5 py-0.2 rounded-full flex-shrink-0">
+                      {currentFlowOneTpl.badge}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180 text-[#5C1F3D]' : ''}`} />
+              </button>
 
-              <div>
-                <h3 className="text-sm font-bold text-[#172B4D] mb-1 group-hover:text-[#5C1F3D] transition-colors">
-                  flowOne Templates
-                </h3>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Industry-standard warehouse blueprints provided by flowOne.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1 text-xs font-semibold text-[#5C1F3D] mt-4 pt-2 border-t border-gray-100">
-                {isFlowOneSelected ? 'Selected (Select blueprint below)' : 'Select category'}
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </button>
-
-            {/* Inline Expanded Templates Selection */}
-            {isFlowOneSelected && (
-              <div className="border-t border-[#d1def0] bg-[#fdfafb] p-4 rounded-b-xl flex flex-col gap-2">
-                <p className="text-[11px] font-bold text-[#5C1F3D] uppercase tracking-wider mb-1">
-                  Select Blueprint Template:
-                </p>
-                {FLOWONE_TEMPLATES.map(tpl => {
-                  const isSubSelected = selectedFlowOneSubId === tpl.id;
-                  return (
-                    <button
-                      key={tpl.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFlowOneSubId(tpl.id);
-                      }}
-                      className={`text-left p-3 rounded-lg border transition-all flex items-start gap-2.5 ${
-                        isSubSelected
-                          ? 'border-[#5C1F3D] bg-white ring-1 ring-[#5C1F3D]/20 shadow-2xs'
-                          : 'border-transparent bg-white/60 hover:bg-white hover:border-gray-200'
-                      }`}
-                    >
-                      {/* Radio button dot */}
-                      <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isSubSelected ? 'border-[#5C1F3D]' : 'border-gray-300'
-                      }`}>
-                        {isSubSelected && <div className="w-2 h-2 rounded-full bg-[#5C1F3D]" />}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className={`text-xs font-bold ${isSubSelected ? 'text-[#5C1F3D]' : 'text-[#172B4D]'}`}>
-                            {tpl.name}
-                          </p>
-                          {tpl.badge && (
-                            <span className="text-[9px] font-bold bg-[#5C1F3D] text-white px-1.5 py-0.2 rounded-full">
-                              {tpl.badge}
+              {/* Custom Floating Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl border border-[#d1def0] shadow-xl z-30 py-1 max-h-64 overflow-y-auto divide-y divide-gray-100">
+                  {FLOWONE_TEMPLATES.map(tpl => {
+                    const ItemIcon = tpl.icon;
+                    const isSelected = selectedFlowOneSubId === tpl.id;
+                    return (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFlowOneSubId(tpl.id);
+                          selectPrimary('flowone-template');
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 transition-colors ${
+                          isSelected ? 'bg-[#fdfafb]' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <ItemIcon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isSelected ? 'text-[#5C1F3D]' : 'text-gray-400'}`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-xs font-bold ${isSelected ? 'text-[#5C1F3D]' : 'text-[#172B4D]'}`}>
+                              {tpl.name}
                             </span>
-                          )}
+                            {tpl.badge && (
+                              <span className="text-[9px] font-bold bg-[#5C1F3D] text-white px-1.5 py-0.2 rounded-full ml-1">
+                                {tpl.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500 leading-tight mt-0.5 truncate">
+                            {tpl.description}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                          {tpl.description}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#5C1F3D] mt-0.5 flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card 2: Build From Scratch */}
           <button
             onClick={() => selectPrimary('scratch')}
-            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[160px] ${
+            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[190px] ${
               isScratchSelected
                 ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md'
                 : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
@@ -223,7 +297,7 @@ export function WarehouseSetupScreen({
           {/* Card 3: Import Existing Configuration */}
           <button
             onClick={() => selectPrimary('import')}
-            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[160px] ${
+            className={`group text-left rounded-xl border-2 p-5 transition-all flex flex-col justify-between relative bg-white min-h-[190px] ${
               isImportSelected
                 ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-md'
                 : 'border-[#d1def0] hover:border-[#5C1F3D]/60 hover:shadow-sm'
