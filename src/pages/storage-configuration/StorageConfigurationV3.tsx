@@ -7,7 +7,7 @@ import { EntryScreen } from '../../components/warehouse-setup/EntryScreen';
 import { SetupWizard } from '../../components/warehouse-setup/SetupWizard';
 import { OverviewTab } from '../../components/warehouse-setup/OverviewTab';
 import { PublishedProtectionModal } from '../../components/warehouse-setup/modals/PublishedProtectionModal';
-import { WarehouseSetupModal } from '../../components/warehouse-setup/modals/WarehouseSetupModal';
+import { WarehouseSetupScreen } from '../../components/warehouse-setup/WarehouseSetupScreen';
 
 // ─── Wizard initial state factory ───────────────────────────────────────────
 function makeInitialWizardState(
@@ -51,11 +51,11 @@ export default function StorageConfigurationV3() {
   // Active entry tab (only relevant when published)
   const [activeTab, setActiveTab] = useState<EntryTab>('overview');
 
-  // Wizard state
+  // Wizard state (active when non-null)
   const [wizardState, setWizardState] = useState<WizardState | null>(null);
 
-  // Setup modal state
-  const [showSetupModal, setShowSetupModal] = useState(false);
+  // Dedicated Warehouse Setup full-page screen state
+  const [isSetupScreenActive, setIsSetupScreenActive] = useState(false);
 
   // Protection modal state
   const [showProtectionModal, setShowProtectionModal] = useState(false);
@@ -69,28 +69,30 @@ export default function StorageConfigurationV3() {
     setSelectedWarehouseId(id);
     setActiveTab('overview');
     setWizardState(null);
+    setIsSetupScreenActive(false);
   };
 
   /**
    * Called when user initiates a new warehouse setup.
-   * Opens the dedicated Warehouse Setup modal (method selection) first.
+   * Navigates to the dedicated full-page Warehouse Setup screen first.
    */
   const handleStartNewWarehouse = () => {
-    setShowSetupModal(true);
+    setIsSetupScreenActive(true);
+    setWizardState(null);
   };
 
   /**
    * Opens the Setup Wizard directly (e.g. from method selection or edit hierarchy).
    */
   const openWizard = (method?: SetupMethod, step?: WizardStep, returnToStep?: WizardStep) => {
+    setIsSetupScreenActive(false);
     setWizardState(makeInitialWizardState(config, method, step, returnToStep));
   };
 
   /**
-   * Handles method selection completion from WarehouseSetupModal.
+   * Handles method selection completion from WarehouseSetupScreen.
    */
   const handleMethodChosen = (method: SetupMethod) => {
-    setShowSetupModal(false);
     openWizard(method, 1);
   };
 
@@ -247,7 +249,7 @@ export default function StorageConfigurationV3() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render Main Layout ─────────────────────────────────────────────────────
   return (
     <ModulePageTemplate
       title="Storage Configuration"
@@ -257,7 +259,7 @@ export default function StorageConfigurationV3() {
       disableTemplatePadding
     >
       <div className="p-6 h-full flex flex-col">
-        {/* Wizard overlay — full height within the module */}
+        {/* Full-page Wizard Experience */}
         {wizardState ? (
           <SetupWizard
             state={wizardState}
@@ -265,7 +267,15 @@ export default function StorageConfigurationV3() {
             onClose={closeWizard}
             warehouseName={config.warehouseName}
           />
+        ) : isSetupScreenActive ? (
+          /* Full-page Dedicated Warehouse Setup Screen */
+          <WarehouseSetupScreen
+            warehouseName={config.warehouseName}
+            onContinue={handleMethodChosen}
+            onBack={() => setIsSetupScreenActive(false)}
+          />
         ) : (
+          /* Main Entry Experience */
           <EntryScreen
             config={config}
             selectedWarehouse={selectedWarehouseId}
@@ -282,14 +292,6 @@ export default function StorageConfigurationV3() {
             onTabContent={renderTabContent}
           />
         )}
-
-        {/* Dedicated Warehouse Setup modal (Choose a Setup Method) */}
-        <WarehouseSetupModal
-          isOpen={showSetupModal}
-          warehouseName={config.warehouseName}
-          onContinue={handleMethodChosen}
-          onCancel={() => setShowSetupModal(false)}
-        />
 
         {/* Protection modal for published models */}
         <PublishedProtectionModal
