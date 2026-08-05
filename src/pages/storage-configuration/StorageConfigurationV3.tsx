@@ -7,6 +7,7 @@ import { EntryScreen } from '../../components/warehouse-setup/EntryScreen';
 import { SetupWizard } from '../../components/warehouse-setup/SetupWizard';
 import { OverviewTab } from '../../components/warehouse-setup/OverviewTab';
 import { PublishedProtectionModal } from '../../components/warehouse-setup/modals/PublishedProtectionModal';
+import { WarehouseSetupModal } from '../../components/warehouse-setup/modals/WarehouseSetupModal';
 
 // ─── Wizard initial state factory ───────────────────────────────────────────
 function makeInitialWizardState(
@@ -16,7 +17,7 @@ function makeInitialWizardState(
   returnToStep?: WizardStep
 ): WizardState {
   return {
-    currentStep: startStep ?? (initialMethod ? 2 : 1),
+    currentStep: startStep ?? 1,
     returnToStep,
     selectedMethod: initialMethod,
     hierarchyModel: config.activeHierarchyModel ?? { ...STANDARD_6_LEVEL, id: `hm-new-${Date.now()}`, name: 'New Hierarchy' },
@@ -53,6 +54,9 @@ export default function StorageConfigurationV3() {
   // Wizard state
   const [wizardState, setWizardState] = useState<WizardState | null>(null);
 
+  // Setup modal state
+  const [showSetupModal, setShowSetupModal] = useState(false);
+
   // Protection modal state
   const [showProtectionModal, setShowProtectionModal] = useState(false);
   const [pendingOriginStep, setPendingOriginStep] = useState<WizardStep | undefined>(undefined);
@@ -68,7 +72,30 @@ export default function StorageConfigurationV3() {
   };
 
   /**
-   * Opens the Setup Wizard / Hierarchy Designer.
+   * Called when user initiates a new warehouse setup.
+   * Opens the dedicated Warehouse Setup modal (method selection) first.
+   */
+  const handleStartNewWarehouse = () => {
+    setShowSetupModal(true);
+  };
+
+  /**
+   * Opens the Setup Wizard directly (e.g. from method selection or edit hierarchy).
+   */
+  const openWizard = (method?: SetupMethod, step?: WizardStep, returnToStep?: WizardStep) => {
+    setWizardState(makeInitialWizardState(config, method, step, returnToStep));
+  };
+
+  /**
+   * Handles method selection completion from WarehouseSetupModal.
+   */
+  const handleMethodChosen = (method: SetupMethod) => {
+    setShowSetupModal(false);
+    openWizard(method, 1);
+  };
+
+  /**
+   * Opens the Hierarchy Designer directly.
    * Checks published protection first if editing a published hierarchy model.
    */
   const handleEditHierarchyClick = (originStep?: WizardStep) => {
@@ -76,22 +103,18 @@ export default function StorageConfigurationV3() {
       setPendingOriginStep(originStep);
       setShowProtectionModal(true);
     } else {
-      openWizard(undefined, 2, originStep);
+      openWizard(undefined, 1, originStep);
     }
-  };
-
-  const openWizard = (method?: SetupMethod, step?: WizardStep, returnToStep?: WizardStep) => {
-    setWizardState(makeInitialWizardState(config, method, step, returnToStep));
   };
 
   const handleCreateDraft = () => {
     setShowProtectionModal(false);
-    openWizard('scratch', 2, pendingOriginStep);
+    openWizard('scratch', 1, pendingOriginStep);
   };
 
   const handleContinueDraft = () => {
     setShowProtectionModal(false);
-    openWizard('draft-template', 2, pendingOriginStep);
+    openWizard('draft-template', 1, pendingOriginStep);
   };
 
   const closeWizard = () => {
@@ -102,7 +125,7 @@ export default function StorageConfigurationV3() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab config={config} onSetupClick={() => openWizard()} />;
+        return <OverviewTab config={config} onSetupClick={() => handleStartNewWarehouse()} />;
 
       case 'hierarchy-model':
         return (
@@ -148,7 +171,7 @@ export default function StorageConfigurationV3() {
                 <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Layouts</h3>
                 <p className="text-sm text-gray-500">{config.zones.length} zones configured</p>
               </div>
-              <button onClick={() => openWizard(undefined, 4)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors">
+              <button onClick={() => openWizard(undefined, 3)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors">
                 Manage Zones
               </button>
             </div>
@@ -167,7 +190,7 @@ export default function StorageConfigurationV3() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleEditHierarchyClick(4)}
+                      onClick={() => handleEditHierarchyClick(3)}
                       className="px-3 py-1.5 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded hover:bg-[#f9f4f7] transition-colors"
                     >
                       Edit Hierarchy
@@ -190,7 +213,7 @@ export default function StorageConfigurationV3() {
                 <h3 className="text-base font-semibold text-[#172B4D] mb-1">Naming & Rules</h3>
                 <p className="text-sm text-gray-500">Location code format and barcode settings</p>
               </div>
-              <button onClick={() => openWizard(undefined, 6)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors">
+              <button onClick={() => openWizard(undefined, 5)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors">
                 Edit Rules
               </button>
             </div>
@@ -249,10 +272,24 @@ export default function StorageConfigurationV3() {
             onWarehouseChange={handleWarehouseChange}
             activeTab={activeTab}
             onTabChange={(tab) => setActiveTab(tab as EntryTab)}
-            onSetupClick={openWizard}
+            onSetupClick={(method) => {
+              if (method) {
+                openWizard(method, 1);
+              } else {
+                handleStartNewWarehouse();
+              }
+            }}
             onTabContent={renderTabContent}
           />
         )}
+
+        {/* Dedicated Warehouse Setup modal (Choose a Setup Method) */}
+        <WarehouseSetupModal
+          isOpen={showSetupModal}
+          warehouseName={config.warehouseName}
+          onContinue={handleMethodChosen}
+          onCancel={() => setShowSetupModal(false)}
+        />
 
         {/* Protection modal for published models */}
         <PublishedProtectionModal
