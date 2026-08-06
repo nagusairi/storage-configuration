@@ -486,39 +486,36 @@ export default function StorageConfigurationV5() {
                   <div className="bg-gray-100 p-0.5 rounded-[3px] flex items-center gap-0.5 border border-gray-200">
                     <button
                       onClick={() => setZoneViewMode('expanded')}
-                      className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                      className={`h-[28px] w-[28px] rounded-[2px] transition-colors flex items-center justify-center ${
                         zoneViewMode === 'expanded'
                           ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
-                          : 'text-gray-600 hover:text-gray-900'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
                       }`}
-                      title="Expanded Detailed View"
+                      title="Expanded View"
                     >
-                      <Sliders className="w-3.5 h-3.5" />
-                      <span>Expanded</span>
+                      <Sliders className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setZoneViewMode('card')}
-                      className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                      className={`h-[28px] w-[28px] rounded-[2px] transition-colors flex items-center justify-center ${
                         zoneViewMode === 'card'
                           ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
-                          : 'text-gray-600 hover:text-gray-900'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
                       }`}
-                      title="Compact Card View"
+                      title="Card View"
                     >
-                      <LayoutGrid className="w-3.5 h-3.5" />
-                      <span>Card View</span>
+                      <LayoutGrid className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setZoneViewMode('table')}
-                      className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                      className={`h-[28px] w-[28px] rounded-[2px] transition-colors flex items-center justify-center ${
                         zoneViewMode === 'table'
                           ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
-                          : 'text-gray-600 hover:text-gray-900'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
                       }`}
                       title="Table View"
                     >
-                      <List className="w-3.5 h-3.5" />
-                      <span>Table View</span>
+                      <List className="w-4 h-4" />
                     </button>
                   </div>
 

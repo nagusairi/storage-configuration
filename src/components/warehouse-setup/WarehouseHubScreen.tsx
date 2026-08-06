@@ -226,24 +226,24 @@ export function WarehouseHubScreen({
 
         {/* Right: View Mode Toggle */}
         <div className="flex items-center gap-2 flex-shrink-0 self-end md:self-auto">
-          <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
+          <div className="flex items-center bg-gray-100 p-0.5 rounded-[3px] border border-gray-200">
             <button
               onClick={() => setViewMode('card')}
-              className={`p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-semibold ${
-                viewMode === 'card' ? 'bg-white text-[#5C1F3D] shadow-2xs' : 'text-gray-500 hover:text-gray-800'
+              className={`h-[28px] w-[28px] rounded-[2px] transition-colors flex items-center justify-center ${
+                viewMode === 'card' ? 'bg-white text-[#5C1F3D] shadow-2xs font-semibold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
               }`}
-              title="Card Grid View"
+              title="Card View"
             >
-              <LayoutGrid className="w-3.5 h-3.5" /> Card View
+              <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-semibold ${
-                viewMode === 'table' ? 'bg-white text-[#5C1F3D] shadow-2xs' : 'text-gray-500 hover:text-gray-800'
+              className={`h-[28px] w-[28px] rounded-[2px] transition-colors flex items-center justify-center ${
+                viewMode === 'table' ? 'bg-white text-[#5C1F3D] shadow-2xs font-semibold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
               }`}
               title="Table View"
             >
-              <List className="w-3.5 h-3.5" /> Table View
+              <List className="w-4 h-4" />
             </button>
           </div>
         </div>
