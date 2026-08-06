@@ -24,7 +24,13 @@ import {
   Wrench,
   FileCode,
   Lock,
-  ArrowLeft
+  ArrowLeft,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  MoreVertical,
+  Sliders,
+  RotateCcw
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel, HierarchyLevel } from '../types';
 import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry, type HierarchyLifecycleStatus } from '../hierarchyModelsData';
@@ -91,6 +97,10 @@ function ZoneCard({
     { id: 'l4', name: 'Shelf', pluralName: 'Shelves', codePrefix: 'S', depth: 3, supportsCapacity: true, supportsDimensions: true, supportsWeight: true, supportsBarcode: true, supportsTemperature: false, supportsSerial: false, supportsBatch: false, allowedChildLevelIds: ['l5'] },
     { id: 'l5', name: 'Bin', pluralName: 'Bins', codePrefix: 'B', depth: 4, supportsCapacity: true, supportsDimensions: true, supportsWeight: true, supportsBarcode: true, supportsTemperature: false, supportsSerial: true, supportsBatch: true, allowedChildLevelIds: [] },
   ]);
+  const [previousScratchLevels, setPreviousScratchLevels] = useState<HierarchyLevel[] | null>(null);
+  const [showReorderUndoToast, setShowReorderUndoToast] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [activeContextMenuLevelId, setActiveContextMenuLevelId] = useState<string | null>(null);
   const [scratchPublishedEntry, setScratchPublishedEntry] = useState<HierarchyModelCatalogEntry | null>(null);
 
   // Auto-dismissing toast for Outcome 1 (Compatible)
@@ -139,7 +149,7 @@ function ZoneCard({
       return entry.id === 'hm-flowone-cold-storage';
     }
     if (q.includes('vault') || q.includes('high') || q.includes('val')) {
-      return entry.id === 'hm-org-high-value';
+      return entry.id === 'hm-[#org-high-value]';
     }
     if (q.includes('retail') || q.includes('fast')) {
       return entry.id === 'hm-flowone-retail';
@@ -158,6 +168,85 @@ function ZoneCard({
     }
     return true;
   });
+
+  // ── REORDERING LOGIC & UNDO STACK ──────────────────────────────────────────
+  const handleReorderLevels = (newLevels: HierarchyLevel[]) => {
+    setPreviousScratchLevels([...scratchLevels]);
+    // Recalculate depth and child pointers
+    const reindexed = newLevels.map((lvl, idx) => ({
+      ...lvl,
+      depth: idx,
+      allowedChildLevelIds: idx < newLevels.length - 1 ? [newLevels[idx + 1].id] : [],
+    }));
+    setScratchLevels(reindexed);
+    setShowReorderUndoToast(true);
+  };
+
+  const handleMoveLevel = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= scratchLevels.length) return;
+    const updated = [...scratchLevels];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(targetIndex, 0, moved);
+    handleReorderLevels(updated);
+  };
+
+  const handleUndoReorder = () => {
+    if (previousScratchLevels) {
+      setScratchLevels(previousScratchLevels);
+      setPreviousScratchLevels(null);
+      setShowReorderUndoToast(false);
+    }
+  };
+
+  // ── CONTEXT MENU ACTIONS ──────────────────────────────────────────────────
+  const handleDuplicateLevel = (index: number) => {
+    const src = scratchLevels[index];
+    const dup: HierarchyLevel = {
+      ...src,
+      id: `l-${Date.now()}`,
+      name: `${src.name} Copy`,
+      pluralName: `${src.pluralName} Copy`,
+      codePrefix: `${src.codePrefix}2`,
+    };
+    const updated = [...scratchLevels];
+    updated.splice(index + 1, 0, dup);
+    handleReorderLevels(updated);
+    setActiveContextMenuLevelId(null);
+  };
+
+  const handleInsertLevelRelative = (index: number, position: 'above' | 'below') => {
+    const targetIdx = position === 'above' ? index : index + 1;
+    const newLvl: HierarchyLevel = {
+      id: `l-${Date.now()}`,
+      name: `New Level`,
+      pluralName: `New Levels`,
+      codePrefix: `NL`,
+      depth: targetIdx,
+      supportsCapacity: true,
+      supportsDimensions: true,
+      supportsWeight: false,
+      supportsBarcode: true,
+      supportsTemperature: false,
+      supportsSerial: false,
+      supportsBatch: false,
+      allowedChildLevelIds: [],
+    };
+    const updated = [...scratchLevels];
+    updated.splice(targetIdx, 0, newLvl);
+    handleReorderLevels(updated);
+    setActiveContextMenuLevelId(null);
+  };
+
+  const handleDeleteLevelAt = (index: number) => {
+    if (scratchLevels.length <= 1) {
+      alert('A Hierarchy Model must contain at least 1 level.');
+      return;
+    }
+    const updated = scratchLevels.filter((_, idx) => idx !== index);
+    handleReorderLevels(updated);
+    setActiveContextMenuLevelId(null);
+  };
 
   // ── HIERARCHY COMPATIBILITY VALIDATION ENGINE ─────────────────────────────
   const initiateApplyModel = (entry: HierarchyModelCatalogEntry) => {
@@ -636,6 +725,7 @@ function ZoneCard({
                       })}
                     </div>
 
+                    {/* ── BOTTOM ADVANCED ACTIONS ──────────────────────────────── */}
                     <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2">
                         <button
@@ -733,7 +823,20 @@ function ZoneCard({
       {/* ── BUILD FROM SCRATCH 4-STEP WIZARD MODAL ───────────────────────── */}
       {showBuildScratchWizard && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
+            {/* Reorder Undo Toast Banner */}
+            {showReorderUndoToast && (
+              <div className="absolute top-16 left-6 right-6 bg-[#172B4D] text-white px-4 py-2 rounded-xl shadow-xl flex items-center justify-between text-xs z-30 animate-in fade-in duration-150">
+                <span>✓ Hierarchy level reordered successfully.</span>
+                <button
+                  onClick={handleUndoReorder}
+                  className="px-2.5 py-1 bg-[#5C1F3D] hover:bg-[#4a1831] text-white rounded font-bold flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" /> Undo
+                </button>
+              </div>
+            )}
+
             {/* Header with Step Progress Indicator */}
             <div className="px-6 py-4 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
               <div>
@@ -844,9 +947,10 @@ function ZoneCard({
                 </div>
               )}
 
-              {/* STEP 2: HIERARCHY DESIGNER (AUTO-SAVING DRAFT) */}
+              {/* STEP 2: HIERARCHY DESIGNER (REORDERING & CONTEXT MENU) */}
               {scratchStep === 2 && (
                 <div className="space-y-4">
+                  {/* Status Bar */}
                   <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between text-green-900">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -855,10 +959,48 @@ function ZoneCard({
                     <span className="text-[11px] font-semibold text-green-700 font-mono">✓ Draft Saved • Just now</span>
                   </div>
 
+                  {/* Live Chain Preview Banner */}
+                  <div className="bg-purple-50/60 border border-purple-200 rounded-xl p-3 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-purple-900">Live Hierarchy Preview:</span>
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-[#5C1F3D] flex-wrap">
+                      {scratchLevels.map((l, i) => (
+                        <span key={l.id} className="flex items-center gap-1 bg-white border border-purple-200 px-2 py-0.5 rounded shadow-2xs">
+                          {l.name} ({l.codePrefix})
+                          {i < scratchLevels.length - 1 && <span className="text-gray-400 ml-1">→</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Interactive Level Manager */}
                   <div className="space-y-2">
                     {scratchLevels.map((lvl, idx) => (
-                      <div key={lvl.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center justify-between">
+                      <div
+                        key={lvl.id}
+                        draggable
+                        onDragStart={() => setDraggedIndex(idx)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={() => {
+                          if (draggedIndex !== null && draggedIndex !== idx) {
+                            const updated = [...scratchLevels];
+                            const [moved] = updated.splice(draggedIndex, 1);
+                            updated.splice(idx, 0, moved);
+                            handleReorderLevels(updated);
+                            setDraggedIndex(null);
+                          }
+                        }}
+                        className={`bg-white border rounded-xl p-3 flex items-center justify-between transition-all relative ${
+                          draggedIndex === idx ? 'border-[#5C1F3D] bg-purple-50/40 ring-2 ring-[#5C1F3D]/20 shadow-md' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            title="Drag to reorder"
+                            className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing p-1"
+                          >
+                            <GripVertical className="w-4 h-4" />
+                          </button>
                           <span className="w-6 h-6 rounded-full bg-purple-50 text-[#5C1F3D] font-mono font-bold flex items-center justify-center text-[10px]">
                             L{idx + 1}
                           </span>
@@ -876,10 +1018,90 @@ function ZoneCard({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                          {lvl.supportsCapacity && <span className="bg-gray-100 px-1.5 py-0.5 rounded">Capacity</span>}
-                          {lvl.supportsBarcode && <span className="bg-gray-100 px-1.5 py-0.5 rounded">Barcode</span>}
-                          {lvl.supportsSerial && <span className="bg-gray-100 px-1.5 py-0.5 rounded">Serial</span>}
+                        {/* Controls & Context Menu */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveLevel(idx, 'up')}
+                              title="Move Up"
+                              className={`p-1 rounded hover:bg-white ${idx === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600'}`}
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === scratchLevels.length - 1}
+                              onClick={() => handleMoveLevel(idx, 'down')}
+                              title="Move Down"
+                              className={`p-1 rounded hover:bg-white ${idx === scratchLevels.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600'}`}
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Context Menu Dropdown Trigger */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setActiveContextMenuLevelId(activeContextMenuLevelId === lvl.id ? null : lvl.id)}
+                              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+
+                            {/* Dropdown Menu Popup */}
+                            {activeContextMenuLevelId === lvl.id && (
+                              <div className="absolute right-0 top-8 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => handleInsertLevelRelative(idx, 'above')}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 font-medium text-gray-700"
+                                >
+                                  + Insert Above
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleInsertLevelRelative(idx, 'below')}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 font-medium text-gray-700"
+                                >
+                                  + Insert Below
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDuplicateLevel(idx)}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 font-medium text-gray-700"
+                                >
+                                  Duplicate Level
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveLevel(idx, 'up')}
+                                  className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 font-medium ${idx === 0 ? 'text-gray-300' : 'text-gray-700'}`}
+                                >
+                                  Move Up ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === scratchLevels.length - 1}
+                                  onClick={() => handleMoveLevel(idx, 'down')}
+                                  className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 font-medium ${idx === scratchLevels.length - 1 ? 'text-gray-300' : 'text-gray-700'}`}
+                                >
+                                  Move Down ▼
+                                </button>
+                                <div className="border-t border-gray-100 my-1"></div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLevelAt(idx)}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-red-50 font-bold text-red-600"
+                                >
+                                  Delete Level
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -887,24 +1109,7 @@ function ZoneCard({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      const newLvl: HierarchyLevel = {
-                        id: `l-${Date.now()}`,
-                        name: `Level ${scratchLevels.length + 1}`,
-                        pluralName: `Levels ${scratchLevels.length + 1}`,
-                        codePrefix: `L${scratchLevels.length + 1}`,
-                        depth: scratchLevels.length,
-                        supportsCapacity: true,
-                        supportsDimensions: true,
-                        supportsWeight: false,
-                        supportsBarcode: true,
-                        supportsTemperature: false,
-                        supportsSerial: false,
-                        supportsBatch: false,
-                        allowedChildLevelIds: [],
-                      };
-                      setScratchLevels([...scratchLevels, newLvl]);
-                    }}
+                    onClick={() => handleInsertLevelRelative(scratchLevels.length - 1, 'below')}
                     className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-600 hover:border-[#5C1F3D] font-bold rounded-xl flex items-center justify-center gap-1"
                   >
                     + Add Hierarchy Level
