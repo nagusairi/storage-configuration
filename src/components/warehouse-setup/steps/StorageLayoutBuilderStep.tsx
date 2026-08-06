@@ -350,31 +350,31 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
   };
 
   return (
-    <div className="flex flex-col h-full space-y-4 p-6">
+    <div className="p-6 flex flex-col h-full space-y-4">
       {/* ── Live Summary Banner ───────────────────────────────────────────── */}
-      <div className="bg-white border border-[#d1def0] rounded-xl px-6 py-4 shadow-xs flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
-        <div className="flex items-center gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-[#5C1F3D]/10 text-[#5C1F3D] flex items-center justify-center font-bold flex-shrink-0">
-            <Calculator className="w-4.5 h-4.5" />
+      <div className="bg-white border border-[#d1def0] rounded-none px-5 py-3.5 shadow-xs flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#5C1F3D]/10 text-[#5C1F3D] flex items-center justify-center font-bold">
+            <Calculator className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-[#172B4D]">Live Storage Structure Summary</h4>
-            <p className="text-xs text-gray-500 mt-0.5">Real-time aggregate hierarchy counts for {activeZone.name}</p>
+            <h4 className="text-xs font-bold text-[#172B4D]">Live Storage Structure Summary</h4>
+            <p className="text-[11px] text-gray-500">Real-time aggregate hierarchy counts for {activeZone.name}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {modelLevels.map((lvl, idx) => {
             const count = countsByLevel[lvl.pluralName] ?? countsByLevel[lvl.name] ?? (idx === 0 ? 1 : 0);
             return (
-              <div key={lvl.id} className="bg-[#f7f8f9] border border-gray-200 px-3.5 py-1.5 rounded-lg flex items-center gap-2">
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{lvl.pluralName}:</span>
+              <div key={lvl.id} className="bg-[#f7f8f9] border border-gray-200 px-3 py-1 rounded-lg flex items-center gap-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{lvl.pluralName}:</span>
                 <span className="text-xs font-bold font-mono text-[#172B4D]">{count.toLocaleString()}</span>
               </div>
             );
           })}
-          <div className="bg-[#5C1F3D] text-white px-4 py-1.5 rounded-lg flex items-center gap-2 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white/90">Total Storage Units:</span>
+          <div className="bg-[#5C1F3D] text-white px-3 py-1 rounded-lg flex items-center gap-2 shadow-2xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">Total Storage Units:</span>
             <span className="text-xs font-bold font-mono text-white">{totalBinsCount.toLocaleString()}</span>
           </div>
         </div>
