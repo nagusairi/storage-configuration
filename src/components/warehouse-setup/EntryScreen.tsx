@@ -219,7 +219,6 @@ export function EntryScreen({
       <div className="bg-white rounded-lg shadow-sm border border-[#d1def0] px-5 py-3 mb-3 flex items-center justify-between gap-4 flex-shrink-0">
         {/* Left: Warehouse Selector + New Warehouse */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs font-medium text-gray-600 whitespace-nowrap">Warehouse:</span>
           <div className="w-[260px]">
             <SearchableWarehouseSelect
               warehouses={WAREHOUSE_LIST}
