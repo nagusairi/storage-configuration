@@ -476,6 +476,13 @@ export default function StorageConfigurationV5() {
       title={workspaceMode === 'hub' ? "Warehouse Configuration Hub" : "Storage Configuration v5"}
       subtitle={workspaceMode === 'hub' ? "Manage and monitor all warehouse configurations" : "Warehouse setup and configuration (v5)"}
       breadcrumbs={workspaceMode === 'hub' ? ['Dashboard', 'Warehouse Configuration Hub'] : ['Dashboard', 'Warehouse Configuration Hub', config.warehouseName]}
+      onBreadcrumbClick={(index) => {
+        if (index === 1) {
+          setWorkspaceMode('hub');
+          setWizardState(null);
+          setShowWarehouseSetup(false);
+        }
+      }}
       disableTemplatePadding
     >
       <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup ? 'p-0' : 'p-4 sm:p-5'}`}>
