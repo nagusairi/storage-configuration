@@ -242,19 +242,10 @@ export function EntryScreen({
           </div>
         </div>
 
-        {/* Right: Status Badges + Configure */}
+        {/* Right: Status Badges */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <ConfigStatusBadge status={configStatus} />
           <PublishStatusBadge status={publishStatus} />
-          {configStatus === 'published' && (
-            <button
-              onClick={() => onSetupClick()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#0052CC] border border-[#0052CC] rounded hover:bg-blue-50 transition-colors"
-            >
-              Configure
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          )}
         </div>
       </div>
 
