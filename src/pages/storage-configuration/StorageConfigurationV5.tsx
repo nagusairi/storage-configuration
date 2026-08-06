@@ -13,6 +13,7 @@ import { WarehouseCompareModal } from '../../components/warehouse-setup/modals/W
 import { ZoneManagerWizard } from '../../components/warehouse-setup/ZoneManagerWizard';
 import { ActivityTab } from '../../components/warehouse-setup/ActivityTab';
 import { ValidationTab } from '../../components/warehouse-setup/ValidationTab';
+import { HierarchyModelEditor } from '../../components/warehouse-setup/HierarchyModelEditor';
 
 function getZoneActionLabel(status?: ConfigStatus, isCompact = false): string {
   if (status === 'draft') return 'Resume Setup';
@@ -102,6 +103,9 @@ export default function StorageConfigurationV5() {
   // Dedicated Zone Manager Wizard state
   const [showZoneManagerWizard, setShowZoneManagerWizard] = useState(false);
 
+  // Dedicated Hierarchy Model Editor state
+  const [showHierarchyModelEditor, setShowHierarchyModelEditor] = useState(false);
+
   // Success Toast Notification state
   const [toastNotification, setToastNotification] = useState<{
     title: string;
@@ -134,12 +138,7 @@ export default function StorageConfigurationV5() {
 
   const handleEditHierarchyClick = (originStep?: WizardStep) => {
     setShowWarehouseSetup(false);
-    if (config.configStatus === 'published') {
-      setPendingOriginStep(originStep);
-      setShowProtectionModal(true);
-    } else {
-      openWizard(undefined, 1, originStep);
-    }
+    setShowHierarchyModelEditor(true);
   };
 
   const handleConfigureZoneClick = (zone: ZoneConfig) => {
@@ -914,8 +913,20 @@ export default function StorageConfigurationV5() {
       }}
       disableTemplatePadding
     >
-      <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup || showZoneManagerWizard ? 'p-0' : 'p-4 sm:p-5'}`}>
-        {showZoneManagerWizard ? (
+      <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup || showZoneManagerWizard || showHierarchyModelEditor ? 'p-0' : 'p-4 sm:p-5'}`}>
+        {showHierarchyModelEditor ? (
+          <HierarchyModelEditor
+            config={config}
+            onSaveDraft={(updatedModel) => {
+              // Updates active hierarchy model draft
+              showPublishSuccessToast(`Hierarchy Model saved as Draft successfully.`);
+            }}
+            onReviewImpact={() => {
+              setActiveTab('zone-layouts');
+            }}
+            onClose={() => setShowHierarchyModelEditor(false)}
+          />
+        ) : showZoneManagerWizard ? (
           <ZoneManagerWizard
             config={config}
             onSave={(updatedZones) => {
