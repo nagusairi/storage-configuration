@@ -148,52 +148,6 @@ export function WarehouseHubScreen({
 
   return (
     <div className="space-y-5 pb-6">
-      {/* ── Top Header Banner & Stats ────────────────────────────────────────── */}
-      <div className="bg-white border border-[#d1def0] rounded-xl p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded tracking-wide uppercase">
-                Enterprise Workspace
-              </span>
-              <span className="text-xs font-medium text-gray-400">v4.0</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#172B4D] mt-1">Warehouse Configuration Hub</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              View, monitor and govern warehouse configurations across your entire organization.
-            </p>
-          </div>
-        </div>
-
-        {/* Aggregate KPI Stat Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t border-gray-100">
-          <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-3">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Warehouses</span>
-            <span className="text-lg font-bold text-[#172B4D]">{metrics.total}</span>
-          </div>
-          <div className="bg-green-50/60 border border-green-200/70 rounded-lg p-3">
-            <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider block">Published</span>
-            <span className="text-lg font-bold text-green-800">{metrics.published}</span>
-          </div>
-          <div className="bg-amber-50/60 border border-amber-200/70 rounded-lg p-3">
-            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Draft In Progress</span>
-            <span className="text-lg font-bold text-amber-800">{metrics.draft}</span>
-          </div>
-          <div className="bg-red-50/60 border border-red-200/70 rounded-lg p-3">
-            <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider block">Setup Required</span>
-            <span className="text-lg font-bold text-red-800">{metrics.setupRequired}</span>
-          </div>
-          <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-3">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Storage Locations</span>
-            <span className="text-lg font-bold text-[#172B4D] font-mono">{metrics.totalLocations.toLocaleString()}</span>
-          </div>
-          <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-3">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Avg Utilization</span>
-            <span className="text-lg font-bold text-[#172B4D]">{metrics.avgUtilization}%</span>
-          </div>
-        </div>
-      </div>
-
       {/* ── Toolbar: Search, Filters & View Toggle ───────────────────────────── */}
       <div className="bg-white border border-[#d1def0] rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Left: Search & Quick Status Filters */}
