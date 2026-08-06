@@ -262,9 +262,9 @@ export function WarehouseHubScreen({
         </div>
       </div>
 
-      {/* ── Bulk Action Bar (Active when 1+ selected) ────────────────────────── */}
+      {/* ── Bulk Action Bar (Fixed Floating at Bottom of View with 20px gap) ── */}
       {selectedIds.length > 0 && (
-        <div className="bg-[#5C1F3D] text-white border border-[#4a1831] rounded-xl px-5 py-3 shadow-lg flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed bottom-[20px] left-6 right-6 z-40 bg-[#5C1F3D] text-white border border-[#4a1831] rounded-2xl px-5 py-3 shadow-2xl flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full border border-white/30">
               {selectedIds.length} Warehouse{selectedIds.length !== 1 ? 's' : ''} Selected
