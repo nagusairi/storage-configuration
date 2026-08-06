@@ -1,13 +1,17 @@
 import { useState } from 'react';
+import { Plus, Trash2, AlertTriangle, Info, Check, X, ShieldAlert } from 'lucide-react';
 import { ModulePageTemplate } from '../../components/layouts/ModulePageTemplate';
 import { useSidebar } from '../../contexts/SidebarContext';
-import type { WizardState, SetupMethod, EntryTab, WarehouseConfig, WizardStep } from '../../components/warehouse-setup/types';
-import { MOCK_WAREHOUSE_CONFIGS, STANDARD_6_LEVEL } from '../../components/warehouse-setup/mockData';
+import type { WizardState, SetupMethod, EntryTab, WarehouseConfig, WizardStep, ZoneConfig, PickingStrategy } from '../../components/warehouse-setup/types';
+import { MOCK_WAREHOUSE_CONFIGS, STANDARD_6_LEVEL, COMPACT_3_LEVEL } from '../../components/warehouse-setup/mockData';
 import { EntryScreen } from '../../components/warehouse-setup/EntryScreen';
 import { SetupWizard } from '../../components/warehouse-setup/SetupWizard';
 import { WarehouseSetupScreen } from '../../components/warehouse-setup/WarehouseSetupScreen';
 import { OverviewTab } from '../../components/warehouse-setup/OverviewTab';
 import { PublishedProtectionModal } from '../../components/warehouse-setup/modals/PublishedProtectionModal';
+
+// Mock list of zones with active dependencies (locations/inventory)
+const DEPENDENT_ZONE_IDS = ['zone-a', 'zone-b', 'zone-c'];
 
 // ─── Wizard initial state factory ───────────────────────────────────────────
 function makeInitialWizardState(
@@ -61,8 +65,26 @@ export default function StorageConfigurationV3() {
   const [showProtectionModal, setShowProtectionModal] = useState(false);
   const [pendingOriginStep, setPendingOriginStep] = useState<WizardStep | undefined>(undefined);
 
+  // ── Local Zones State for Published Mode ──────────────────────────────────
+  const [localZones, setLocalZones] = useState<ZoneConfig[] | null>(null);
+
+  // Modals state for Zone Management
+  const [showAddZoneModal, setShowAddZoneModal] = useState(false);
+  const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneCode, setNewZoneCode] = useState('');
+  const [newZoneMode, setNewZoneMode] = useState<'default' | 'custom'>('default');
+  const [newZoneStrategy, setNewZoneStrategy] = useState<PickingStrategy>('FIFO');
+
+  // Delete modal state
+  const [zoneToDelete, setZoneToDelete] = useState<ZoneConfig | null>(null);
+  const [showBlockedDeleteModal, setShowBlockedDeleteModal] = useState(false);
+  const [showStandardDeleteModal, setShowStandardDeleteModal] = useState(false);
+  const [dependencyInfoMsg, setDependencyInfoMsg] = useState<string | null>(null);
+
   // ── Derived ──────────────────────────────────────────────────────────────
-  const config: WarehouseConfig = MOCK_WAREHOUSE_CONFIGS[selectedWarehouseId] ?? Object.values(MOCK_WAREHOUSE_CONFIGS)[0];
+  const rawConfig: WarehouseConfig = MOCK_WAREHOUSE_CONFIGS[selectedWarehouseId] ?? Object.values(MOCK_WAREHOUSE_CONFIGS)[0];
+  const currentZones = localZones ?? rawConfig.zones ?? [];
+  const config: WarehouseConfig = { ...rawConfig, zones: currentZones };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleWarehouseChange = (id: string) => {
@@ -70,6 +92,7 @@ export default function StorageConfigurationV3() {
     setActiveTab('overview');
     setWizardState(null);
     setShowWarehouseSetup(false);
+    setLocalZones(null);
   };
 
   /**
@@ -108,6 +131,67 @@ export default function StorageConfigurationV3() {
   const handleStartSetupWorkflow = (method: SetupMethod, templateId?: string) => {
     setShowWarehouseSetup(false);
     openWizard(method, 1);
+  };
+
+  // ── Zone Management Actions ──────────────────────────────────────────────
+  const handleAddZoneSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newZoneName.trim() || !newZoneCode.trim()) return;
+
+    const created: ZoneConfig = {
+      id: `zone-${Date.now()}`,
+      name: newZoneName.trim(),
+      code: newZoneCode.trim().toUpperCase(),
+      status: 'active',
+      hierarchyMode: newZoneMode,
+      customHierarchyModel: newZoneMode === 'custom' ? COMPACT_3_LEVEL : undefined,
+      pickingStrategy: newZoneStrategy,
+      generation: { levels: [] }
+    };
+
+    setLocalZones([...currentZones, created]);
+    setShowAddZoneModal(false);
+    setNewZoneName('');
+    setNewZoneCode('');
+  };
+
+  const toggleZoneStatus = (zoneId: string) => {
+    setLocalZones(currentZones.map(z => {
+      if (z.id === zoneId) {
+        const nextStatus = z.status === 'active' ? 'inactive' : 'active';
+        return { ...z, status: nextStatus as any };
+      }
+      return z;
+    }));
+  };
+
+  const handleInitiateDeleteZone = (zone: ZoneConfig) => {
+    setZoneToDelete(zone);
+    const hasDependencies = DEPENDENT_ZONE_IDS.includes(zone.id);
+
+    if (hasDependencies) {
+      // State 3: Blocked deletion with itemized dependencies
+      setShowBlockedDeleteModal(true);
+    } else {
+      // State 2: Standard confirmation dialog
+      setShowStandardDeleteModal(true);
+    }
+  };
+
+  const confirmDeleteZone = () => {
+    if (zoneToDelete) {
+      setLocalZones(currentZones.filter(z => z.id !== zoneToDelete.id));
+    }
+    setShowStandardDeleteModal(false);
+    setZoneToDelete(null);
+  };
+
+  const handleDeactivateFromBlockedModal = () => {
+    if (zoneToDelete) {
+      toggleZoneStatus(zoneToDelete.id);
+    }
+    setShowBlockedDeleteModal(false);
+    setZoneToDelete(null);
   };
 
   // ── Tab Content Renderer (only called for published warehouses) ───────────
@@ -263,9 +347,18 @@ export default function StorageConfigurationV3() {
                 <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Layouts</h3>
                 <p className="text-sm text-gray-500">{config.zones.length} zones configured with metadata-driven hierarchies</p>
               </div>
-              <button onClick={() => openWizard(undefined, 3)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm">
-                Manage Zones
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAddZoneModal(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Zone
+                </button>
+                <button onClick={() => openWizard(undefined, 3)} className="px-3.5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
+                  Manage Zones
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-4">
@@ -273,9 +366,12 @@ export default function StorageConfigurationV3() {
                 const isCustom = zone.hierarchyMode === 'custom';
                 const activeModel = isCustom ? zone.customHierarchyModel : config.activeHierarchyModel;
                 const levelsList = activeModel?.levels ?? [];
+                const isActive = zone.status === 'active';
 
                 return (
-                  <div key={zone.id} className="bg-white border border-[#d1def0] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={zone.id} className={`bg-white border rounded-xl p-5 shadow-sm transition-all ${
+                    isActive ? 'border-[#d1def0]' : 'border-gray-200 bg-gray-50/50 opacity-80'
+                  }`}>
                     {/* Header Row */}
                     <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-100">
                       <div className="flex items-center gap-3">
@@ -305,15 +401,35 @@ export default function StorageConfigurationV3() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* Status Toggle / Deactivate Button */}
+                        <button
+                          onClick={() => toggleZoneStatus(zone.id)}
+                          className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize transition-colors flex items-center gap-1 ${
+                            isActive
+                              ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-amber-50 hover:text-amber-700'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-700'
+                          }`}
+                          title={isActive ? 'Click to deactivate zone' : 'Click to activate zone'}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                          {zone.status}
+                        </button>
+
                         <button
                           onClick={() => handleEditHierarchyClick(3)}
-                          className="px-3.5 py-1.5 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors"
                         >
                           Edit Hierarchy
                         </button>
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${zone.status === 'active' ? 'bg-green-50 text-green-700' : zone.status === 'maintenance' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
-                          {zone.status}
-                        </span>
+
+                        {/* Delete Action Button */}
+                        <button
+                          onClick={() => handleInitiateDeleteZone(zone)}
+                          title="Delete Zone"
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
 
@@ -432,7 +548,7 @@ export default function StorageConfigurationV3() {
           />
         )}
 
-        {/* Protection modal for published models */}
+        {/* ── Protection Modal for Published Models ─────────────────────────── */}
         <PublishedProtectionModal
           isOpen={showProtectionModal}
           modelName={config.activeHierarchyModel?.name ?? 'Published Hierarchy'}
@@ -441,6 +557,200 @@ export default function StorageConfigurationV3() {
           onContinueDraft={handleContinueDraft}
           onCancel={() => setShowProtectionModal(false)}
         />
+
+        {/* ── Add Zone Modal ────────────────────────────────────────────────── */}
+        {showAddZoneModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-[#172B4D]">Add New Zone</h3>
+                <button onClick={() => setShowAddZoneModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddZoneSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Zone Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Zone E — Dynamic Bulk"
+                    value={newZoneName}
+                    onChange={(e) => setNewZoneName(e.target.value)}
+                    className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Zone Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. ZE"
+                    value={newZoneCode}
+                    onChange={(e) => setNewZoneCode(e.target.value)}
+                    className="w-full text-sm font-mono uppercase border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Hierarchy Mode</label>
+                  <select
+                    value={newZoneMode}
+                    onChange={(e) => setNewZoneMode(e.target.value as 'default' | 'custom')}
+                    className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D] bg-white"
+                  >
+                    <option value="default">Inherit Warehouse Hierarchy</option>
+                    <option value="custom">Custom Hierarchy Override</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Picking Strategy</label>
+                  <select
+                    value={newZoneStrategy}
+                    onChange={(e) => setNewZoneStrategy(e.target.value as PickingStrategy)}
+                    className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D] bg-white"
+                  >
+                    <option value="FIFO">FIFO (First In, First Out)</option>
+                    <option value="FEFO">FEFO (First Expired, First Out)</option>
+                    <option value="LIFO">LIFO (Last In, First Out)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddZoneModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-sm"
+                  >
+                    Create Zone
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── State 3: Cannot Delete Zone (Blocked Deletion Modal) ─────────── */}
+        {showBlockedDeleteModal && zoneToDelete && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-red-200 max-w-lg w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center flex-shrink-0">
+                  <ShieldAlert className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#172B4D]">Cannot Delete Zone</h3>
+                  <p className="text-xs text-red-600 font-semibold mt-0.5">
+                    {zoneToDelete.name} ({zoneToDelete.code}) is currently in operational use.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4 text-xs text-amber-900 space-y-2">
+                <p className="font-semibold text-amber-950">
+                  {zoneToDelete.name} cannot be deleted because it contains:
+                </p>
+                <ul className="space-y-1 font-mono text-[11px] text-amber-900 pl-2">
+                  <li>• 1,248 Configured Storage Locations</li>
+                  <li>• 312 Active Inventory Items</li>
+                  <li>• 2 Active Putaway Rules</li>
+                  <li>• 1 Picking Strategy ({zoneToDelete.pickingStrategy})</li>
+                </ul>
+                <p className="text-[11px] text-amber-800/90 pt-1 italic">
+                  Before deleting this Zone, remove or reassign all dependent storage locations and operational data.
+                </p>
+              </div>
+
+              {dependencyInfoMsg && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span>{dependencyInfoMsg}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBlockedDeleteModal(false);
+                    setZoneToDelete(null);
+                    setDependencyInfoMsg(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDependencyInfoMsg(`Opening dependency inspector for ${zoneToDelete.name}... (Locations: 1,248, SKUs: 312)`)}
+                  className="px-4 py-2 text-xs font-semibold text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7]"
+                >
+                  View Dependencies
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeactivateFromBlockedModal}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-sm"
+                >
+                  Deactivate Zone
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── State 2: Standard Delete Zone Confirmation Modal ──────────────── */}
+        {showStandardDeleteModal && zoneToDelete && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#172B4D]">Delete Zone?</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{zoneToDelete.name}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <span className="font-semibold text-[#172B4D]">{zoneToDelete.name}</span> contains no storage locations or active inventory. This action cannot be undone.
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowStandardDeleteModal(false);
+                    setZoneToDelete(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={confirmDeleteZone}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm"
+                >
+                  Delete Zone
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ModulePageTemplate>
   );

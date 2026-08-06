@@ -1,4 +1,4 @@
-import { Plus, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Layers, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { WizardState, ZoneConfig, PickingStrategy } from '../types';
 import { COMPACT_3_LEVEL, STANDARD_6_LEVEL } from '../mockData';
@@ -10,12 +10,12 @@ const STATUS_COLORS = { active: 'bg-green-100 text-green-700', inactive: 'bg-gra
 
 function generateId() { return `zone-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`; }
 
-function ZoneCard({ zone, defaultHierarchy, onUpdate }: { zone: ZoneConfig; defaultHierarchy: string; onUpdate: (z: ZoneConfig) => void }) {
+function ZoneCard({ zone, defaultHierarchy, onUpdate, onDelete }: { zone: ZoneConfig; defaultHierarchy: string; onUpdate: (z: ZoneConfig) => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const isCustom = zone.hierarchyMode === 'custom';
 
   return (
-    <div className="bg-white border border-[#d1def0] rounded-xl overflow-hidden">
+    <div className="bg-white border border-[#d1def0] rounded-xl overflow-hidden shadow-xs hover:border-[#5C1F3D]/40 transition-colors">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
@@ -34,25 +34,56 @@ function ZoneCard({ zone, defaultHierarchy, onUpdate }: { zone: ZoneConfig; defa
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Hierarchy Mode:</span>
-          <div className="flex rounded-lg overflow-hidden border border-[#d1def0]">
-            {(['default', 'custom'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => onUpdate({ ...zone, hierarchyMode: mode })}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize ${zone.hierarchyMode === mode ? 'bg-[#5C1F3D] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                {mode}
-              </button>
-            ))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">Hierarchy Mode:</span>
+            <div className="flex rounded-lg overflow-hidden border border-[#d1def0]">
+              {(['default', 'custom'] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => onUpdate({ ...zone, hierarchyMode: mode })}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize ${zone.hierarchyMode === mode ? 'bg-[#5C1F3D] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Delete Button (Draft Mode: Fast & Immediate) */}
+          <button
+            onClick={onDelete}
+            title="Delete Zone"
+            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {/* Expanded Content */}
       {expanded && (
         <div className="border-t border-[#d1def0] px-5 py-4 bg-[#f7f8f9] grid grid-cols-2 gap-4">
+          {/* Zone Name & Code Edits */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Zone Name & Code</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Zone Name"
+                className="flex-1 text-xs border border-gray-200 rounded px-2.5 py-1.5 outline-none focus:border-[#5C1F3D] bg-white"
+                value={zone.name}
+                onChange={e => onUpdate({ ...zone, name: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Code"
+                className="w-20 text-xs font-mono uppercase border border-gray-200 rounded px-2.5 py-1.5 outline-none focus:border-[#5C1F3D] bg-white"
+                value={zone.code}
+                onChange={e => onUpdate({ ...zone, code: e.target.value })}
+              />
+            </div>
+          </div>
           {/* Picking Strategy */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Picking Strategy</label>
@@ -132,6 +163,10 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
     onChange({ ...state, zones: zones.map(z => z.id === updated.id ? updated : z) });
   };
 
+  const deleteZone = (idToDelete: string) => {
+    onChange({ ...state, zones: zones.filter(z => z.id !== idToDelete) });
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-5">
@@ -141,7 +176,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
         </div>
         <button
           onClick={addZone}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Add Zone
@@ -157,7 +192,13 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
       ) : (
         <div className="flex flex-col gap-3">
           {zones.map(zone => (
-            <ZoneCard key={zone.id} zone={zone} defaultHierarchy={defaultHierarchy} onUpdate={updateZone} />
+            <ZoneCard
+              key={zone.id}
+              zone={zone}
+              defaultHierarchy={defaultHierarchy}
+              onUpdate={updateZone}
+              onDelete={() => deleteZone(zone.id)}
+            />
           ))}
         </div>
       )}
