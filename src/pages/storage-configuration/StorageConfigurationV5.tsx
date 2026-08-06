@@ -11,8 +11,7 @@ import { PublishedProtectionModal } from '../../components/warehouse-setup/modal
 import { WarehouseHubScreen } from '../../components/warehouse-setup/WarehouseHubScreen';
 import { WarehouseCompareModal } from '../../components/warehouse-setup/modals/WarehouseCompareModal';
 import { ZoneManagerWizard } from '../../components/warehouse-setup/ZoneManagerWizard';
-import { ValidationReadinessCenter } from '../../components/warehouse-setup/ValidationReadinessCenter';
-import { ActivityCenter } from '../../components/warehouse-setup/ActivityCenter';
+import { ActivityTab } from '../../components/warehouse-setup/ActivityTab';
 
 function getZoneActionLabel(status?: ConfigStatus, isCompact = false): string {
   if (status === 'draft') return 'Resume Setup';
@@ -859,21 +858,14 @@ export default function StorageConfigurationV5() {
           </div>
         );
 
-      case 'validation':
-        return (
-          <ValidationReadinessCenter
-            config={config}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-            onSaveDraft={() => alert('Draft saved successfully.')}
-            onPublish={() => alert(`Configuration for ${config.warehouseName} published successfully!`)}
-          />
-        );
-
       case 'activity':
         return (
-          <ActivityCenter
+          <ActivityTab
             config={config}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={(tab) => setActiveTab(tab as EntryTab)}
+            onRestoreDraft={(ver) => {
+              openWizard('scratch', 1);
+            }}
           />
         );
 
