@@ -16,6 +16,7 @@ export type EntryTab = 'overview' | 'hierarchy-model' | 'zone-layouts' | 'templa
 export interface HierarchyLevel {
   id: string;
   name: string;
+  businessName?: string;
   pluralName: string;
   codePrefix: string;
   depth: number;

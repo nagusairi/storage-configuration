@@ -36,6 +36,23 @@ const CAPABILITY_TOGGLES: { key: keyof HierarchyLevel; label: string }[] = [
 function generateId() { return `lvl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`; }
 
 function buildDefaultLevel(depth: number, name?: string, prefix?: string): HierarchyLevel {
+  if (depth === 0) {
+    return {
+      id: generateId(),
+      name: 'Zone',
+      pluralName: 'Zones',
+      codePrefix: 'Z',
+      depth: 0,
+      supportsCapacity: true,
+      supportsDimensions: true,
+      supportsWeight: false,
+      supportsBarcode: true,
+      supportsTemperature: false,
+      supportsSerial: false,
+      supportsBatch: false,
+      allowedChildLevelIds: [],
+    };
+  }
   const levelNum = depth + 1;
   const lName = name || `Level ${levelNum}`;
   return {
@@ -80,7 +97,11 @@ function DropIndicatorLine({ label }: { label: string }) {
 }
 
 export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2HierarchyDesignerProps) {
-  const levels = state.hierarchyModel.levels;
+  // Ensure index 0 is always locked to Zone
+  const rawLevels = state.hierarchyModel.levels;
+  const levels = rawLevels.length > 0
+    ? rawLevels.map((l, idx) => idx === 0 ? { ...l, name: 'Zone', pluralName: 'Zones', codePrefix: 'Z', depth: 0 } : l)
+    : [buildDefaultLevel(0)];
 
   // Selected level for Properties Inspector
   const [selectedId, setSelectedId] = useState<string>(levels[0]?.id ?? '');
@@ -90,17 +111,14 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  // Store initial levels for review changes diff
-  const [initialLevels] = useState<HierarchyLevel[]>([...levels]);
-
   // Context menu popover state for node cards
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   // Review changes modal state
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-  // Auto-save feedback state
-  const [autoSaveStatus, setAutoSaveStatus] = useState<string>('Draft Saved • Just now');
+  // Auto-save status state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<string>('Auto-saved • Just now');
 
   // Select initial if selection lost
   useEffect(() => {
@@ -109,19 +127,30 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
     }
   }, [levels, selectedLevel]);
 
-  // Update levels helper with auto-save timestamp trigger
   const updateLevels = (newLevels: HierarchyLevel[]) => {
-    const recalculated = newLevels.map((l, idx) => ({ ...l, depth: idx }));
+    // Re-index depths and ensure position 0 is strictly Zone
+    const sanitized = newLevels.map((l, idx) => ({
+      ...l,
+      depth: idx,
+      ...(idx === 0 ? { name: 'Zone', pluralName: 'Zones', codePrefix: 'Z' } : {})
+    }));
     onChange({
       ...state,
+      hierarchyModel: {
+        ...state.hierarchyModel,
+        levels: sanitized,
+      },
       isDirty: true,
-      hierarchyModel: { ...state.hierarchyModel, levels: recalculated }
     });
     setAutoSaveStatus('Draft Saved • Just now');
   };
 
-  // Drag and Drop handlers
+  // Drag and Drop handlers - Zone (index 0) cannot be dragged or targeted for drop above it
   const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (index === 0) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('text/plain', index.toString());
     e.dataTransfer.effectAllowed = 'move';
     setDraggedIndex(index);
@@ -131,8 +160,11 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
+
+    // Prevent targeting index 0 (above Zone)
+    const effectiveIndex = index === 0 ? 1 : index;
+    if (dragOverIndex !== effectiveIndex) {
+      setDragOverIndex(effectiveIndex);
     }
   };
 
@@ -146,11 +178,15 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
     const dtSource = e.dataTransfer.getData('text/plain');
     const sourceIndex = draggedIndex !== null ? draggedIndex : parseInt(dtSource, 10);
 
-    if (!isNaN(sourceIndex) && sourceIndex >= 0 && sourceIndex < levels.length && sourceIndex !== targetIndex) {
-      const updated = [...levels];
-      const [movedItem] = updated.splice(sourceIndex, 1);
-      updated.splice(targetIndex, 0, movedItem);
-      updateLevels(updated);
+    // Zone (sourceIndex 0) cannot be dragged, and targetIndex 0 is clamped to 1
+    if (!isNaN(sourceIndex) && sourceIndex > 0 && sourceIndex < levels.length) {
+      const effectiveTargetIndex = targetIndex === 0 ? 1 : targetIndex;
+      if (sourceIndex !== effectiveTargetIndex) {
+        const updated = [...levels];
+        const [movedItem] = updated.splice(sourceIndex, 1);
+        updated.splice(effectiveTargetIndex, 0, movedItem);
+        updateLevels(updated);
+      }
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -161,7 +197,7 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
     setDragOverIndex(null);
   };
 
-  // Level operations
+  // Level operations - Locked for Zone (index 0)
   const addLevel = () => {
     const newLvl = buildDefaultLevel(levels.length);
     updateLevels([...levels, newLvl]);
@@ -169,6 +205,7 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
   };
 
   const insertAbove = (idx: number) => {
+    if (idx === 0) return; // Cannot insert above Zone (Warehouse is root)
     const newLvl = buildDefaultLevel(idx, `Level ${idx + 1}`, `L${idx + 1}`);
     const updated = [...levels];
     updated.splice(idx, 0, newLvl);
@@ -187,6 +224,7 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
   };
 
   const duplicateLevel = (idx: number) => {
+    if (idx === 0) return; // Cannot duplicate Zone
     const src = levels[idx];
     const dup: HierarchyLevel = {
       ...src,
@@ -203,7 +241,8 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
   };
 
   const deleteLevel = (id: string) => {
-    if (levels.length <= 1) return;
+    const targetIdx = levels.findIndex(l => l.id === id);
+    if (targetIdx <= 0) return; // Cannot delete Zone (index 0)
     const updated = levels.filter(l => l.id !== id);
     updateLevels(updated);
     if (selectedId === id) {
@@ -213,14 +252,14 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
   };
 
   const moveUp = (idx: number) => {
-    if (idx === 0) return;
+    if (idx <= 1) return; // Cannot move into or above position 0 (Zone)
     const updated = [...levels];
     [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
     updateLevels(updated);
   };
 
   const moveDown = (idx: number) => {
-    if (idx === levels.length - 1) return;
+    if (idx === 0 || idx === levels.length - 1) return; // Cannot move Zone
     const updated = [...levels];
     [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
     updateLevels(updated);
@@ -315,14 +354,16 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
                   )}
 
                   <div
-                    draggable
+                    draggable={idx !== 0}
                     onDragStart={(e) => handleDragStart(e, idx)}
                     onDragOver={(e) => handleDragOver(e, idx)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, idx)}
                     onDragEnd={handleDragEnd}
                     onClick={() => setSelectedId(lvl.id)}
-                    className={`group relative flex items-center gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                    className={`group relative flex items-center gap-2 p-2.5 rounded-lg border text-xs transition-all ${
+                      idx === 0 ? 'cursor-pointer border-purple-200 bg-purple-50/40' : 'cursor-pointer'
+                    } ${
                       isDragging
                         ? 'opacity-30 border-dashed border-[#5C1F3D] bg-gray-50'
                         : isDragOver
@@ -332,42 +373,58 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <GripVertical className="w-3.5 h-3.5 text-gray-400 cursor-grab flex-shrink-0 hover:text-[#5C1F3D]" />
+                    {idx === 0 ? (
+                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#5C1F3D] text-white flex-shrink-0">
+                        Fixed
+                      </span>
+                    ) : (
+                      <GripVertical className="w-3.5 h-3.5 text-gray-400 cursor-grab flex-shrink-0 hover:text-[#5C1F3D]" />
+                    )}
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorDot}`} />
                     <span className="text-[10px] font-bold text-gray-400 w-4 flex-shrink-0">L{idx + 1}</span>
 
                     <input
                       type="text"
-                      value={lvl.name}
+                      value={idx === 0 ? 'Zone' : lvl.name}
+                      readOnly={idx === 0}
                       onChange={e => {
+                        if (idx === 0) return;
                         const updated = levels.map(l => l.id === lvl.id ? { ...l, name: e.target.value, pluralName: `${e.target.value}s` } : l);
                         updateLevels(updated);
                       }}
-                      className="flex-1 min-w-0 font-medium text-[#172B4D] bg-transparent border-none outline-none focus:bg-white focus:px-1 rounded"
+                      className={`flex-1 min-w-0 font-medium ${idx === 0 ? 'text-[#5C1F3D] font-bold cursor-default' : 'text-[#172B4D]'} bg-transparent border-none outline-none focus:bg-white focus:px-1 rounded`}
                       placeholder="Level Name"
                     />
+
+                    {idx === 0 && lvl.businessName && (
+                      <span className="text-[10px] font-semibold text-[#5C1F3D] bg-purple-100/70 px-1.5 py-0.5 rounded truncate max-w-[80px]">
+                        {lvl.businessName}
+                      </span>
+                    )}
 
                     <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1 py-0.5 rounded">
                       {lvl.codePrefix}
                     </span>
 
-                    {/* Reorder Buttons */}
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-0.5">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); moveUp(idx); }}
-                        disabled={idx === 0}
-                        className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
-                      >
-                        <ChevronUp className="w-3 h-3 text-gray-600" />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); moveDown(idx); }}
-                        disabled={idx === levels.length - 1}
-                        className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
-                      >
-                        <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
-                      </button>
-                    </div>
+                    {/* Reorder Buttons (Hidden for Zone index 0) */}
+                    {idx > 0 && (
+                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-0.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); moveUp(idx); }}
+                          disabled={idx <= 1}
+                          className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                        >
+                          <ChevronUp className="w-3 h-3 text-gray-600" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); moveDown(idx); }}
+                          disabled={idx === levels.length - 1}
+                          className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-20"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -415,6 +472,10 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
                 const isDragOver = dragOverIndex === idx && draggedIndex !== idx;
                 const theme = DEPTH_COLORS[idx % DEPTH_COLORS.length];
 
+                const displayName = idx === 0
+                  ? (lvl.businessName ? `Zone – ${lvl.businessName}` : 'Zone')
+                  : (lvl.name || 'Unnamed Level');
+
                 return (
                   <div
                     key={lvl.id}
@@ -430,14 +491,16 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
 
                     {/* Node Card */}
                     <div
-                      draggable
+                      draggable={idx !== 0}
                       onDragStart={(e) => handleDragStart(e, idx)}
                       onDragOver={(e) => handleDragOver(e, idx)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, idx)}
                       onDragEnd={handleDragEnd}
                       onClick={() => setSelectedId(lvl.id)}
-                      className={`w-full bg-white rounded-xl border p-4 shadow-sm relative transition-all cursor-grab active:cursor-grabbing ${
+                      className={`w-full bg-white rounded-xl border p-4 shadow-sm relative transition-all ${
+                        idx === 0 ? 'cursor-pointer border-purple-200' : 'cursor-grab active:cursor-grabbing'
+                      } ${
                         isDragging
                           ? 'opacity-30 border-dashed border-[#5C1F3D]'
                           : isDragOver
@@ -449,11 +512,17 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <GripVertical className="w-4 h-4 text-gray-400 hover:text-[#5C1F3D]" />
+                          {idx === 0 ? (
+                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#5C1F3D] text-white">
+                              Fixed Level 1
+                            </span>
+                          ) : (
+                            <GripVertical className="w-4 h-4 text-gray-400 hover:text-[#5C1F3D]" />
+                          )}
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${theme}`}>
                             Depth {idx + 1}
                           </span>
-                          <h4 className="text-sm font-bold text-[#172B4D]">{lvl.name || 'Unnamed Level'}</h4>
+                          <h4 className="text-sm font-bold text-[#172B4D]">{displayName}</h4>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -479,32 +548,39 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
                                 onClick={(e) => e.stopPropagation()}
                                 className="absolute right-0 top-7 z-30 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 text-xs text-[#172B4D]"
                               >
-                                <button
-                                  onClick={() => insertAbove(idx)}
-                                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <Plus className="w-3.5 h-3.5 text-blue-500" /> Insert Above
-                                </button>
+                                {idx > 0 && (
+                                  <button
+                                    onClick={() => insertAbove(idx)}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Plus className="w-3.5 h-3.5 text-blue-500" /> Insert Above
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => insertBelow(idx)}
                                   className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                   <Plus className="w-3.5 h-3.5 text-green-500" /> Insert Below
                                 </button>
-                                <button
-                                  onClick={() => duplicateLevel(idx)}
-                                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <Copy className="w-3.5 h-3.5 text-purple-500" /> Duplicate
-                                </button>
-                                <div className="h-[1px] bg-gray-100 my-1" />
-                                <button
-                                  onClick={() => deleteLevel(lvl.id)}
-                                  disabled={levels.length <= 1}
-                                  className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-2 disabled:opacity-40"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" /> Delete Level
-                                </button>
+                                {idx > 0 && (
+                                  <button
+                                    onClick={() => duplicateLevel(idx)}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Copy className="w-3.5 h-3.5 text-purple-500" /> Duplicate
+                                  </button>
+                                )}
+                                {idx > 0 && (
+                                  <>
+                                    <div className="h-[1px] bg-gray-100 my-1" />
+                                    <button
+                                      onClick={() => deleteLevel(lvl.id)}
+                                      className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-2"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" /> Delete Level
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
@@ -546,39 +622,87 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
               {/* Active Selection Banner */}
               <div className="p-3 bg-[#f9f4f7] border border-[#5C1F3D]/20 rounded-lg">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#5C1F3D]">Selected Level</span>
-                <h3 className="text-sm font-bold text-[#172B4D]">{selectedLevel.name}</h3>
+                <h3 className="text-sm font-bold text-[#172B4D]">
+                  {selectedLevel.depth === 0
+                    ? (selectedLevel.businessName ? `Zone – ${selectedLevel.businessName}` : 'Zone')
+                    : selectedLevel.name}
+                </h3>
                 <p className="text-[11px] text-gray-500">Depth Index: {selectedLevel.depth + 1}</p>
               </div>
 
               {/* Text Fields */}
               <div className="flex flex-col gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">Display Name</label>
-                  <input
-                    type="text"
-                    value={selectedLevel.name}
-                    onChange={e => updateSelected({ name: e.target.value })}
-                    className="w-full text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-[#5C1F3D]"
-                  />
-                </div>
+                {selectedLevel.depth === 0 ? (
+                  <>
+                    <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-[#5C1F3D] flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Zone</strong> is the fixed system-defined structural anchor beneath Warehouse. Assign a <strong>Business Name</strong> for operational purpose.
+                      </span>
+                    </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">Plural Name</label>
-                  <input
-                    type="text"
-                    value={selectedLevel.pluralName}
-                    onChange={e => updateSelected({ pluralName: e.target.value })}
-                    className="w-full text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-[#5C1F3D]"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                        System Level Name (Locked)
+                      </label>
+                      <input
+                        type="text"
+                        value="Zone"
+                        disabled
+                        className="w-full text-xs font-semibold px-3 py-1.5 bg-gray-100 text-gray-500 border border-gray-200 rounded-lg cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#5C1F3D] mb-1">
+                        Business Name (Operational Purpose)
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedLevel.businessName || ''}
+                        onChange={e => updateSelected({ businessName: e.target.value })}
+                        placeholder="e.g. Inbound, Cold Storage, High Value Storage"
+                        className="w-full text-xs px-3 py-1.5 border border-[#5C1F3D]/40 rounded-lg outline-none focus:ring-1 focus:ring-[#5C1F3D]"
+                      />
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Rendered across application as <strong>Zone – {selectedLevel.businessName || 'Business Name'}</strong>.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">Display Name</label>
+                      <input
+                        type="text"
+                        value={selectedLevel.name}
+                        onChange={e => updateSelected({ name: e.target.value })}
+                        className="w-full text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-[#5C1F3D]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">Plural Name</label>
+                      <input
+                        type="text"
+                        value={selectedLevel.pluralName}
+                        onChange={e => updateSelected({ pluralName: e.target.value })}
+                        className="w-full text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-[#5C1F3D]"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-600 mb-1">Code Prefix</label>
                   <input
                     type="text"
-                    value={selectedLevel.codePrefix}
+                    value={selectedLevel.depth === 0 ? 'Z' : selectedLevel.codePrefix}
+                    disabled={selectedLevel.depth === 0}
                     onChange={e => updateSelected({ codePrefix: e.target.value })}
-                    className="w-full text-xs font-mono px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-[#5C1F3D]"
+                    className={`w-full text-xs font-mono px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-[#5C1F3D] ${
+                      selectedLevel.depth === 0 ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
               </div>
