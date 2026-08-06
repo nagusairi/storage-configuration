@@ -148,31 +148,31 @@ export function WarehouseHubScreen({
 
   return (
     <div className="space-y-5 pb-6">
-      {/* ── Individual KPI Stat Cards (Flex Row) ───────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-[140px] bg-white border border-[#d1def0] rounded-xl p-3.5 shadow-2xs">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Warehouses</span>
-          <span className="text-lg font-bold text-[#172B4D] mt-0.5 block">{metrics.total}</span>
+      {/* ── Compact KPI Stat Cards (Flex Row) ───────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex-1 min-w-[130px] bg-white border border-[#d1def0] rounded-lg px-3 py-2 shadow-2xs flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">Total Warehouses</span>
+          <span className="text-sm font-extrabold text-[#172B4D]">{metrics.total}</span>
         </div>
-        <div className="flex-1 min-w-[140px] bg-green-50/70 border border-green-200 rounded-xl p-3.5 shadow-2xs">
-          <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider block">Published</span>
-          <span className="text-lg font-bold text-green-800 mt-0.5 block">{metrics.published}</span>
+        <div className="flex-1 min-w-[130px] bg-green-50/70 border border-green-200 rounded-lg px-3 py-2 shadow-2xs flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold text-green-700 uppercase tracking-wide truncate">Published</span>
+          <span className="text-sm font-extrabold text-green-800">{metrics.published}</span>
         </div>
-        <div className="flex-1 min-w-[140px] bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 shadow-2xs">
-          <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Draft In Progress</span>
-          <span className="text-lg font-bold text-amber-800 mt-0.5 block">{metrics.draft}</span>
+        <div className="flex-1 min-w-[130px] bg-amber-50/70 border border-amber-200 rounded-lg px-3 py-2 shadow-2xs flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide truncate">Draft In Progress</span>
+          <span className="text-sm font-extrabold text-amber-800">{metrics.draft}</span>
         </div>
-        <div className="flex-1 min-w-[140px] bg-red-50/70 border border-red-200 rounded-xl p-3.5 shadow-2xs">
-          <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider block">Setup Required</span>
-          <span className="text-lg font-bold text-red-800 mt-0.5 block">{metrics.setupRequired}</span>
+        <div className="flex-1 min-w-[130px] bg-red-50/70 border border-red-200 rounded-lg px-3 py-2 shadow-2xs flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold text-red-700 uppercase tracking-wide truncate">Setup Required</span>
+          <span className="text-sm font-extrabold text-red-800">{metrics.setupRequired}</span>
         </div>
-        <div className="flex-1 min-w-[140px] bg-white border border-[#d1def0] rounded-xl p-3.5 shadow-2xs">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Storage Locations</span>
-          <span className="text-lg font-bold text-[#172B4D] font-mono mt-0.5 block">{metrics.totalLocations.toLocaleString()}</span>
+        <div className="flex-1 min-w-[130px] bg-white border border-[#d1def0] rounded-lg px-3 py-2 shadow-2xs flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">Storage Locations</span>
+          <span className="text-sm font-extrabold text-[#172B4D] font-mono">{metrics.totalLocations.toLocaleString()}</span>
         </div>
-        <div className="flex-1 min-w-[140px] bg-white border border-[#d1def0] rounded-xl p-3.5 shadow-2xs">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Avg Utilization</span>
-          <span className="text-lg font-bold text-[#172B4D] mt-0.5 block">{metrics.avgUtilization}%</span>
+        <div className="flex-1 min-w-[130px] bg-white border border-[#d1def0] rounded-lg px-3 py-2 shadow-2xs flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">Avg Utilization</span>
+          <span className="text-sm font-extrabold text-[#172B4D]">{metrics.avgUtilization}%</span>
         </div>
       </div>
 
