@@ -208,7 +208,7 @@ function DraftResumePanel({
 // ─── Main EntryScreen ─────────────────────────────────────────────────────────
 export function EntryScreen({
   config, selectedWarehouse, onWarehouseChange,
-  activeTab, onTabChange, onSetupClick, onNewWarehouseClick, onTabContent,
+  activeTab, onTabChange, onSetupClick, onNewWarehouseClick, onTabContent, onViewAllWarehouses,
 }: EntryScreenProps) {
   const { kpis, configStatus, publishStatus, warehouseName } = config;
   const isDash = configStatus === 'not-configured';
