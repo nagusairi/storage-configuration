@@ -110,27 +110,29 @@ export function WarehouseHubScreen({
         return (
           <button
             onClick={() => onSelectWarehouse(id)}
-            className="w-full px-3 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+            className="w-full h-[32px] px-3 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap"
           >
-            <Plus className="w-3.5 h-3.5" /> Start Setup
+            <span>Configure</span>
+            <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
           </button>
         );
       case 'draft':
         return (
           <button
             onClick={() => onSelectWarehouse(id)}
-            className="w-full px-3 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+            className="w-full h-[32px] px-3 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-[3px] transition-colors flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap"
           >
-            <Sparkles className="w-3.5 h-3.5" /> Continue Draft
+            <PlayCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Resume Setup</span>
           </button>
         );
       case 'archived':
         return (
           <button
             onClick={() => onSelectWarehouse(id)}
-            className="w-full px-3 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            className="w-full h-[32px] px-3 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-[3px] transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
           >
-            View Only
+            <span>View Only</span>
           </button>
         );
       case 'published':
@@ -138,9 +140,10 @@ export function WarehouseHubScreen({
         return (
           <button
             onClick={() => onSelectWarehouse(id)}
-            className="w-full px-3 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+            className="w-full h-[32px] px-3 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap"
           >
-            Open Configuration <ArrowUpRight className="w-3.5 h-3.5" />
+            <span>Edit Configuration</span>
+            <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
           </button>
         );
     }
@@ -513,9 +516,12 @@ export function WarehouseHubScreen({
                       <td className="p-3.5 text-right">
                         <button
                           onClick={() => onSelectWarehouse(id)}
-                          className="px-3 py-1 text-xs font-semibold text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/30 rounded transition-colors"
+                          className="h-[32px] px-3.5 text-xs font-medium leading-none text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/40 rounded-[3px] transition-colors whitespace-nowrap inline-flex items-center gap-1 shadow-2xs"
                         >
-                          Configure →
+                          {w.configStatus === 'not-configured' && 'Configure →'}
+                          {w.configStatus === 'draft' && 'Resume Setup →'}
+                          {w.configStatus === 'published' && 'Edit Configuration →'}
+                          {w.configStatus !== 'not-configured' && w.configStatus !== 'draft' && w.configStatus !== 'published' && 'Edit Configuration →'}
                         </button>
                       </td>
                     </tr>
