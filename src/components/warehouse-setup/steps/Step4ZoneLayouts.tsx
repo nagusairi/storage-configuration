@@ -12,7 +12,9 @@ import {
   Sparkles,
   Layers,
   Building2,
-  X
+  X,
+  Lightbulb,
+  ArrowRight
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel } from '../types';
 import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry } from '../hierarchyModelsData';
@@ -46,10 +48,18 @@ function ZoneCard({
   onOpenHierarchyDesigner: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showAdvancedHierarchy, setShowAdvancedHierarchy] = useState(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'flowone' | 'organization' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showViewHierarchyModal, setShowViewHierarchyModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
+  const [showFullCatalogModal, setShowFullCatalogModal] = useState(false);
+
+  // Extract level 1 prefix and business label
+  // e.g. "Zone A — General Storage" -> levelPrefix = "Zone", businessLabel = "General Storage"
+  const rawName = zone.name || 'Zone A';
+  const nameParts = rawName.split(' — ');
+  const levelPrefix = defaultHierarchyModel.levels[0]?.name ?? 'Zone';
+  const businessLabel = nameParts[1] ?? nameParts[0].replace(/^Zone\s+[A-[#]*/i, '') ?? 'General Storage';
 
   // Source selection: 'warehouse' (Inherit) vs 'model' (Use Hierarchy Model)
   const isInherited = (zone.hierarchySource ?? (zone.hierarchyMode === 'custom' ? 'model' : 'warehouse')) === 'warehouse';
@@ -60,22 +70,37 @@ function ZoneCard({
 
   // Derived badge label
   const getSourceBadge = () => {
-    if (isInherited) return 'Warehouse Hierarchy';
+    if (isInherited) return 'Inherited from Warehouse';
     if (zone.hierarchyModelSourceName) {
       return `${zone.hierarchyModelSourceName} (${zone.hierarchyModelSourceCategory ?? 'Hierarchy Model'})`;
     }
     return `${activeModel.name} (Custom Model)`;
   };
 
-  // Filtered models catalog
+  // Smart Recommendation based on Business Label
+  const smartRecommendation = HIERARCHY_MODELS_CATALOG.find(entry => {
+    const q = businessLabel.toLowerCase();
+    if (q.includes('cold') || q.includes('freezer') || q.includes('frozen')) {
+      return entry.id === 'hm-flowone-cold-storage';
+    }
+    if (q.includes('vault') || q.includes('high') || q.includes('val')) {
+      return entry.id === 'hm-org-high-value';
+    }
+    if (q.includes('retail') || q.includes('fast')) {
+      return entry.id === 'hm-flowone-retail';
+    }
+    if (q.includes('bulk') || q.includes('floor')) {
+      return entry.id === 'hm-org-bulk-pallet';
+    }
+    return false;
+  });
+
+  // Filtered catalog
   const filteredCatalog = HIERARCHY_MODELS_CATALOG.filter(entry => {
     if (activeCategoryFilter !== 'all' && entry.category !== activeCategoryFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const nameMatch = entry.name.toLowerCase().includes(q);
-      const descMatch = entry.description.toLowerCase().includes(q);
-      const tagMatch = entry.tags.some(t => t.toLowerCase().includes(q));
-      return nameMatch || descMatch || tagMatch;
+      return entry.name.toLowerCase().includes(q) || entry.description.toLowerCase().includes(q);
     }
     return true;
   });
@@ -89,6 +114,12 @@ function ZoneCard({
       hierarchyModelSourceCategory: entry.sourceBadge,
       customHierarchyModel: entry.model,
     });
+    setShowAdvancedHierarchy(false);
+  };
+
+  const handleBusinessLabelChange = (newLabel: string) => {
+    const combinedName = `${levelPrefix} — ${newLabel}`;
+    onUpdate({ ...zone, name: combinedName });
   };
 
   return (
@@ -114,11 +145,12 @@ function ZoneCard({
             </div>
             <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
               <span className="font-semibold text-gray-700">Hierarchy Source:</span>
-              <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1 ${
                 isInherited
                   ? 'bg-green-50 text-green-800 border border-green-200'
                   : 'bg-purple-50 text-purple-800 border border-purple-200'
               }`}>
+                {isInherited && <CheckCircle2 className="w-3 h-3 text-green-600" />}
                 {getSourceBadge()}
               </span>
               <span className="text-gray-300">·</span>
@@ -128,7 +160,6 @@ function ZoneCard({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Delete Button */}
           <button
             onClick={onDelete}
             title="Delete Zone"
@@ -141,365 +172,332 @@ function ZoneCard({
 
       {/* ── Expanded Content Canvas ────────────────────────────────────────── */}
       {expanded && (
-        <div className="border-t border-[#d1def0] px-5 py-5 bg-[#f7f8f9] space-y-5">
-          {/* Basic Edits */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-2xs">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Zone Name</label>
-              <input
-                type="text"
-                className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D] font-medium text-[#172B4D]"
-                value={zone.name}
-                onChange={e => onUpdate({ ...zone, name: e.target.value })}
-              />
+        <div className="border-t border-[#d1def0] px-5 py-5 bg-[#f7f8f9] space-y-4">
+          {/* ── LEVEL 1 HIERARCHY NAMING CONTROL ───────────────────────────── */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#172B4D] uppercase tracking-wider">
+                Hierarchy Naming (Level 1)
+              </span>
+              <span className="text-[10px] text-gray-400 font-mono">Level Prefix is Fixed</span>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Zone Code</label>
-              <input
-                type="text"
-                className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D] font-mono font-bold text-[#172B4D]"
-                value={zone.code}
-                onChange={e => onUpdate({ ...zone, code: e.target.value.toUpperCase() })}
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-500 mb-1">
+                  Hierarchy Level (Fixed)
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={levelPrefix}
+                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-gray-100 font-mono font-bold text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Business Label
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Inbound, Cold Storage, Fast-Pick"
+                  value={businessLabel}
+                  onChange={e => handleBusinessLabelChange(e.target.value)}
+                  className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D] font-bold text-[#172B4D]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Zone Code
+                </label>
+                <input
+                  type="text"
+                  value={zone.code}
+                  onChange={e => onUpdate({ ...zone, code: e.target.value.toUpperCase() })}
+                  className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-[#5C1F3D] font-mono font-bold text-[#172B4D]"
+                />
+              </div>
+            </div>
+
+            {/* Live Display Name Preview */}
+            <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs">
+              <span className="text-gray-500 font-medium">Displayed Instance Name:</span>
+              <span className="font-bold text-[#172B4D] font-mono bg-white border border-gray-200 px-2 py-0.5 rounded">
+                {levelPrefix} – {businessLabel}
+              </span>
             </div>
           </div>
 
-          {/* ── HIERARCHY SOURCE SELECTION CONTROL ───────────────────────────── */}
-          <div className="bg-white p-5 rounded-xl border border-[#d1def0] shadow-2xs space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-[#172B4D] uppercase tracking-wider mb-1">
-                Hierarchy Source Selection
-              </label>
-              <p className="text-xs text-gray-500">
-                Choose where this Zone derives its physical storage hierarchy model.
-              </p>
-            </div>
-
-            {/* Radio Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  onUpdate({
-                    ...zone,
-                    hierarchyMode: 'default',
-                    hierarchySource: 'warehouse',
-                    hierarchyModelSourceName: undefined,
-                    hierarchyModelSourceCategory: undefined,
-                    customHierarchyModel: undefined,
-                  })
-                }
-                className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-start gap-3 ${
-                  isInherited
-                    ? 'border-[#5C1F3D] bg-purple-50/20 ring-2 ring-[#5C1F3D]/10'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 flex-shrink-0 ${
-                  isInherited ? 'border-[#5C1F3D] bg-[#5C1F3D]' : 'border-gray-400 bg-white'
-                }`}>
-                  {isInherited && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#172B4D] block">Inherit Warehouse Hierarchy</span>
-                  <span className="text-[11px] text-gray-500 mt-0.5 block">
-                    Uses active Warehouse Master Hierarchy ({defaultHierarchyModel.name}).
-                  </span>
-                </div>
-              </button>
+          {/* ── HIERARCHY SOURCE SUMMARY & PROGRESSIVE DISCLOSURE ───────────── */}
+          <div className="bg-white p-4 rounded-xl border border-[#d1def0] shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-[#172B4D] uppercase tracking-wider block">
+                  Hierarchy Source
+                </span>
+                <span className="text-[11px] text-gray-500">
+                  Current Source: <strong>{getSourceBadge()}</strong>
+                </span>
+              </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  onUpdate({
-                    ...zone,
-                    hierarchyMode: 'custom',
-                    hierarchySource: 'model',
-                    hierarchyModelSourceName: zone.hierarchyModelSourceName ?? 'Cold Storage',
-                    hierarchyModelSourceCategory: zone.hierarchyModelSourceCategory ?? 'flowOne Model',
-                    customHierarchyModel: zone.customHierarchyModel ?? HIERARCHY_MODELS_CATALOG[1].model,
-                  })
-                }
-                className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-start gap-3 ${
-                  !isInherited
-                    ? 'border-[#5C1F3D] bg-purple-50/20 ring-2 ring-[#5C1F3D]/10'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
+                onClick={() => setShowAdvancedHierarchy(!showAdvancedHierarchy)}
+                className="px-3 py-1.5 text-xs font-bold text-[#5C1F3D] hover:bg-purple-50 border border-[#5C1F3D]/30 rounded-lg transition-colors"
               >
-                <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 flex-shrink-0 ${
-                  !isInherited ? 'border-[#5C1F3D] bg-[#5C1F3D]' : 'border-gray-400 bg-white'
-                }`}>
-                  {!isInherited && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#172B4D] block">Use Hierarchy Model</span>
-                  <span className="text-[11px] text-gray-500 mt-0.5 block">
-                    Select or create a specialized hierarchy model for this Zone.
-                  </span>
-                </div>
+                {showAdvancedHierarchy ? 'Hide Options' : '[Change Source]'}
               </button>
             </div>
 
-            {/* ── CASE 1: INHERIT WAREHOUSE HIERARCHY SUMMARY ───────────────── */}
-            {isInherited ? (
-              <div className="bg-[#f7f8f9] border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-[#5C1F3D]" />
-                    <span className="text-xs font-bold text-[#172B4D]">Inherited Warehouse Hierarchy Summary</span>
-                  </div>
-                  <div className="text-xs text-gray-600 space-y-0.5 pl-6">
-                    <p>Hierarchy Source: <strong>Warehouse Hierarchy</strong></p>
-                    <p>Active Model: <strong>{defaultHierarchyModel.name}</strong> ({defaultHierarchyModel.levels.length} Levels)</p>
-                    <p>Origin: <strong>Warehouse Configuration</strong></p>
+            {/* Read-Only Inherited Summary */}
+            {isInherited && !showAdvancedHierarchy && (
+              <div className="bg-green-50/60 border border-green-200/70 rounded-xl p-3 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold text-green-900 block">Inherited from Warehouse Hierarchy</span>
+                    <span className="text-green-700 text-[11px]">
+                      Active Blueprint: {defaultHierarchyModel.name} ({defaultHierarchyModel.levels.length} Levels)
+                    </span>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setShowViewHierarchyModal(true)}
-                  className="px-3.5 py-2 text-xs font-semibold text-[#5C1F3D] bg-white border border-[#5C1F3D]/30 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                  className="px-2.5 py-1 text-[11px] font-semibold text-green-800 bg-white border border-green-300 rounded hover:bg-green-100"
                 >
-                  <Eye className="w-3.5 h-3.5" /> View Hierarchy
+                  View Blueprint →
                 </button>
               </div>
-            ) : (
-              /* ── CASE 2: USE HIERARCHY MODEL INLINE SELECTOR ───────────── */
-              <div className="bg-[#fcfdfe] border border-[#d1def0] rounded-xl p-4 space-y-4 mt-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-3">
-                  <div>
-                    <h5 className="text-xs font-bold text-[#172B4D] flex items-center gap-1.5">
-                      <BookOpen className="w-4 h-4 text-[#5C1F3D]" /> Select Hierarchy Model
-                    </h5>
-                    <p className="text-[11px] text-gray-500">
-                      Choose from reusable flowOne, Organization, or Draft hierarchy models.
-                    </p>
-                  </div>
+            )}
 
-                  {/* Search Bar */}
-                  <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search hierarchy models..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5C1F3D]"
-                    />
-                  </div>
+            {/* ── PROGRESSIVELY REVEALED ADVANCED SELECTOR ───────────────────── */}
+            {showAdvancedHierarchy && (
+              <div className="bg-[#fcfdfe] border border-[#d1def0] rounded-xl p-4 space-y-4 pt-4 animate-in fade-in duration-200">
+                {/* Source Choice Radio */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdate({
+                        ...zone,
+                        hierarchyMode: 'default',
+                        hierarchySource: 'warehouse',
+                        hierarchyModelSourceName: undefined,
+                        hierarchyModelSourceCategory: undefined,
+                        customHierarchyModel: undefined,
+                      })
+                    }
+                    className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
+                      isInherited ? 'border-[#5C1F3D] bg-purple-50/20 font-bold' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      isInherited ? 'border-[#5C1F3D] bg-[#5C1F3D]' : 'border-gray-400'
+                    }`}>
+                      {isInherited && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <span className="text-xs text-[#172B4D]">Inherit Warehouse Hierarchy (Recommended)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdate({
+                        ...zone,
+                        hierarchyMode: 'custom',
+                        hierarchySource: 'model',
+                        hierarchyModelSourceName: zone.hierarchyModelSourceName ?? 'Cold Storage',
+                        hierarchyModelSourceCategory: zone.hierarchyModelSourceCategory ?? 'flowOne Model',
+                        customHierarchyModel: zone.customHierarchyModel ?? HIERARCHY_MODELS_CATALOG[1].model,
+                      })
+                    }
+                    className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
+                      !isInherited ? 'border-[#5C1F3D] bg-purple-50/20 font-bold' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      !isInherited ? 'border-[#5C1F3D] bg-[#5C1F3D]' : 'border-gray-400'
+                    }`}>
+                      {!isInherited && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <span className="text-xs text-[#172B4D]">Use Different Hierarchy Model</span>
+                  </button>
                 </div>
 
-                {/* Category Filter Tabs */}
-                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 overflow-x-auto">
-                  {[
-                    { id: 'all', label: 'All Hierarchy Models' },
-                    { id: 'flowone', label: 'flowOne Hierarchy Models' },
-                    { id: 'organization', label: 'Organization Hierarchy Models' },
-                    { id: 'draft', label: 'Draft Hierarchy Models' },
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveCategoryFilter(tab.id as any)}
-                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                        activeCategoryFilter === tab.id
-                          ? 'bg-white text-[#5C1F3D] shadow-2xs font-bold'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
+                {!isInherited && (
+                  <div className="space-y-3 pt-2">
+                    {/* Smart Model Suggestion Box */}
+                    {smartRecommendation && (
+                      <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <Lightbulb className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <div>
+                            <span className="font-bold text-amber-950">Suggested Model for "{businessLabel}":</span>
+                            <span className="text-amber-800 text-[11px] block">{smartRecommendation.name} ({smartRecommendation.description})</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyModel(smartRecommendation)}
+                          className="px-3 py-1 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-2xs"
+                        >
+                          Apply Suggestion
+                        </button>
+                      </div>
+                    )}
 
-                {/* Grid of Catalog Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                  {filteredCatalog.map(entry => {
-                    const isSelectedModel = activeModel.name === entry.name;
-
-                    return (
-                      <div
-                        key={entry.id}
-                        className={`bg-white border rounded-xl p-4 transition-all flex flex-col justify-between ${
-                          isSelectedModel
-                            ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-xs'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                    {/* Quick Selector Header */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#172B4D]">Select Hierarchy Model</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowFullCatalogModal(true)}
+                        className="text-xs font-bold text-[#5C1F3D] hover:underline flex items-center gap-1"
                       >
-                        <div>
-                          <div className="flex items-start justify-between gap-2 mb-2">
+                        Browse All Models <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Category Filter Tabs */}
+                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 overflow-x-auto">
+                      {[
+                        { id: 'all', label: 'All Models' },
+                        { id: 'flowone', label: 'flowOne Models' },
+                        { id: 'organization', label: 'Organization Models' },
+                        { id: 'draft', label: 'Draft Models' },
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveCategoryFilter(tab.id as any)}
+                          className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors whitespace-nowrap ${
+                            activeCategoryFilter === tab.id
+                              ? 'bg-white text-[#5C1F3D] shadow-2xs font-bold'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Compact Grid of Recent Models */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {filteredCatalog.slice(0, 4).map(entry => {
+                        const isSelectedModel = activeModel.name === entry.name;
+                        return (
+                          <div
+                            key={entry.id}
+                            className={`bg-white border rounded-xl p-3 transition-all flex flex-col justify-between ${
+                              isSelectedModel
+                                ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-xs'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center justify-between mb-1">
                                 <h6 className="text-xs font-bold text-[#172B4D]">{entry.name}</h6>
-                                <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-100">
+                                <span className="text-[9px] font-semibold bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-100">
                                   {entry.sourceBadge}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-gray-500 mt-0.5">{entry.description}</p>
+                              <p className="text-[11px] text-gray-500 line-clamp-1">{entry.description}</p>
                             </div>
-                            {isSelectedModel && (
-                              <CheckCircle2 className="w-4 h-4 text-[#5C1F3D] flex-shrink-0" />
-                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleApplyModel(entry)}
+                              className={`mt-2 w-full py-1 text-[11px] font-bold rounded-lg transition-colors ${
+                                isSelectedModel
+                                  ? 'bg-green-50 text-green-700 border border-green-200'
+                                  : 'bg-[#5C1F3D] text-white hover:bg-[#4a1831]'
+                              }`}
+                            >
+                              {isSelectedModel ? 'Selected Model' : 'Apply Model'}
+                            </button>
                           </div>
-
-                          {/* Level Sequence Preview */}
-                          <div className="bg-[#f7f8f9] border border-gray-100 rounded-lg p-2 my-2.5">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                              Levels ({entry.model.levels.length}):
-                            </span>
-                            <div className="flex items-center gap-1 text-[11px] font-mono text-gray-700 flex-wrap">
-                              {entry.model.levels.map((lvl, idx) => (
-                                <span key={lvl.id} className="flex items-center gap-1">
-                                  <span className="bg-white border border-gray-200 px-1.5 py-0.5 rounded font-bold">
-                                    {lvl.name} ({lvl.codePrefix})
-                                  </span>
-                                  {idx < entry.model.levels.length - 1 && <span className="text-gray-300">→</span>}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px]">
-                          <span className="text-gray-400">{entry.updatedAt}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleApplyModel(entry)}
-                            className={`px-3 py-1.5 font-bold rounded-lg transition-colors ${
-                              isSelectedModel
-                                ? 'bg-green-50 text-green-700 border border-green-200'
-                                : 'bg-[#5C1F3D] text-white hover:bg-[#4a1831] shadow-2xs'
-                            }`}
-                          >
-                            {isSelectedModel ? 'Selected Model' : 'Apply Model to Zone'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Bottom Action Bar: Create New & Import */}
-                <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={onOpenHierarchyDesigner}
-                      className="px-3.5 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> + Create New Hierarchy Model
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowImportModal(true)}
-                      className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-gray-500" /> Import Hierarchy Model
-                    </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <span className="text-[11px] text-gray-400 italic">
-                    Newly created or imported models will be saved to your Organization Hierarchy Models.
-                  </span>
-                </div>
+                )}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── View Hierarchy Read-Only Modal ───────────────────────────────── */}
+      {/* ── View Blueprint Modal ─────────────────────────────────────────── */}
       {showViewHierarchyModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-xl w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-[#5C1F3D]" />
-                <h3 className="text-base font-bold text-[#172B4D]">
-                  {defaultHierarchyModel.name} (Read-Only)
-                </h3>
+                <h3 className="text-base font-bold text-[#172B4D]">{defaultHierarchyModel.name}</h3>
               </div>
               <button onClick={() => setShowViewHierarchyModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            <p className="text-xs text-gray-500">
-              Active master hierarchy blueprint inherited directly from Warehouse Configuration.
-            </p>
-
             <div className="space-y-2 bg-[#f7f8f9] p-4 rounded-xl border border-gray-200">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-                Level Sequence ({defaultHierarchyModel.levels.length} Levels):
-              </p>
               {defaultHierarchyModel.levels.map((lvl, idx) => (
                 <div key={lvl.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded">
-                      L{idx + 1}
-                    </span>
-                    <span className="font-bold text-[#172B4D]">{lvl.name}</span>
-                    <span className="text-gray-400 font-mono">({lvl.codePrefix})</span>
-                  </div>
-                  <span className="text-[10px] text-gray-500 font-medium">Inherited</span>
+                  <span className="font-bold text-[#172B4D]">L{idx + 1}: {lvl.name} ({lvl.codePrefix})</span>
+                  <span className="text-[10px] text-gray-400">Inherited</span>
                 </div>
               ))}
             </div>
-
-            <div className="flex items-center justify-end pt-3 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setShowViewHierarchyModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Close View
-              </button>
+            <div className="flex justify-end">
+              <button onClick={() => setShowViewHierarchyModal(false)} className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-300 rounded-lg">Close</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Import Hierarchy Schema Modal ─────────────────────────────────── */}
-      {showImportModal && (
+      {/* ── Browse All Hierarchy Models Full Catalog Modal ───────────────── */}
+      {showFullCatalogModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-[#5C1F3D]" />
-                <h3 className="text-base font-bold text-[#172B4D]">Import Hierarchy Model</h3>
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-[#172B4D]">Hierarchy Models Catalog</h3>
+                <p className="text-xs text-gray-500">Browse all available flowOne, Organization, and Draft models</p>
               </div>
-              <button onClick={() => setShowImportModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <X className="w-4 h-4" />
+              <button onClick={() => setShowFullCatalogModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-500">
-              Upload a valid hierarchy JSON definition schema (.json) to import into Organization Hierarchy Models.
-            </p>
-
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <span className="text-xs font-bold text-[#5C1F3D] block">Click to select file</span>
-              <span className="text-[11px] text-gray-400">Supports JSON schema format</span>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  alert('Hierarchy Model JSON imported successfully into Organization Hierarchy Models!');
-                  setShowImportModal(false);
-                }}
-                className="px-4 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
-              >
-                Import & Save
-              </button>
+            <div className="p-6 overflow-y-auto flex-1 grid grid-cols-2 gap-4">
+              {HIERARCHY_MODELS_CATALOG.map(entry => (
+                <div key={entry.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs hover:border-[#5C1F3D] flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-xs font-bold text-[#172B4D]">{entry.name}</h4>
+                      <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-2 py-0.5 rounded">{entry.sourceBadge}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3">{entry.description}</p>
+                    <div className="flex items-center gap-1 font-mono text-[11px] text-gray-600 flex-wrap">
+                      {entry.model.levels.map(l => (
+                        <span key={l.id} className="bg-gray-100 px-1.5 py-0.5 rounded">{l.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleApplyModel(entry);
+                      setShowFullCatalogModal(false);
+                    }}
+                    className="mt-4 w-full py-2 text-xs font-bold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831]"
+                  >
+                    Select Model
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -512,6 +510,11 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
   const zones = state.zones;
   const defaultHierarchyModel = state.hierarchyModel;
 
+  // Streamlined Add Zone Modal State
+  const [showAddZoneModal, setShowAddZoneModal] = useState(false);
+  const [newBusinessLabel, setNewBusinessLabel] = useState('');
+  const [newZoneCode, setNewZoneCode] = useState('');
+
   const updateZone = (updated: ZoneConfig) => {
     onChange({ ...state, zones: state.zones.map(z => z.id === updated.id ? updated : z) });
   };
@@ -520,35 +523,47 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
     onChange({ ...state, zones: state.zones.filter(z => z.id !== zoneId) });
   };
 
-  const addZone = () => {
+  // Fast Streamlined Single-Click Zone Creation
+  const handleAddZoneSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBusinessLabel.trim()) return;
+
+    const char = String.fromCharCode(65 + zones.length);
+    const code = newZoneCode.trim().toUpperCase() || `Z${char}`;
+    const levelPrefix = defaultHierarchyModel.levels[0]?.name ?? 'Zone';
+
     const newZone: ZoneConfig = {
       id: generateId(),
-      name: `Zone ${String.fromCharCode(65 + zones.length)}`,
-      code: `Z${String.fromCharCode(65 + zones.length)}`,
+      name: `${levelPrefix} — ${newBusinessLabel.trim()}`,
+      code,
       status: 'active',
       hierarchyMode: 'default',
-      hierarchySource: 'warehouse',
+      hierarchySource: 'warehouse', // Automatically inherits Warehouse Hierarchy!
       pickingStrategy: 'FIFO',
       generation: { levels: [] },
     };
+
     onChange({ ...state, zones: [...zones, newZone] });
+    setNewBusinessLabel('');
+    setNewZoneCode('');
+    setShowAddZoneModal(false);
   };
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Layouts & Hierarchy Sources</h3>
+          <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Configuration</h3>
           <p className="text-sm text-gray-500">
-            Define storage zones and select whether each zone inherits the Warehouse Hierarchy or uses a specialized Hierarchy Model.
+            Configure storage zones. New zones automatically inherit the active Warehouse Hierarchy.
           </p>
         </div>
         <button
-          onClick={addZone}
+          onClick={() => setShowAddZoneModal(true)}
           className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-xs"
         >
           <Plus className="w-4 h-4" />
-          Add Zone
+          + Add Zone
         </button>
       </div>
 
@@ -560,12 +575,97 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
             defaultHierarchyModel={defaultHierarchyModel}
             onUpdate={updateZone}
             onDelete={() => deleteZone(zone.id)}
-            onOpenHierarchyDesigner={() => {
-              // Trigger inline designer launch
-            }}
+            onOpenHierarchyDesigner={() => {}}
           />
         ))}
       </div>
+
+      {/* ── LIGHTWEIGHT STREAMLINED ADD ZONE MODAL ───────────────────────── */}
+      {showAddZoneModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-[#5C1F3D]" />
+                <h3 className="text-base font-bold text-[#172B4D]">Add New Zone</h3>
+              </div>
+              <button onClick={() => setShowAddZoneModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddZoneSubmit} className="space-y-4 text-xs">
+              <div className="bg-green-50/70 border border-green-200 rounded-xl p-3 flex items-center gap-2 text-green-900">
+                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                <span>Zone will automatically inherit the active <strong>Warehouse Hierarchy</strong>.</span>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-1">
+                  Hierarchy Level (Fixed)
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={defaultHierarchyModel.levels[0]?.name ?? 'Zone'}
+                  className="w-full p-2.5 border border-gray-200 bg-gray-100 rounded-lg font-mono font-bold text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-1">
+                  Business Label <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Inbound, Cold Storage, Fast-Pick"
+                  value={newBusinessLabel}
+                  onChange={e => setNewBusinessLabel(e.target.value)}
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-bold text-[#172B4D]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-semibold mb-1">
+                  Zone Code <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={`e.g. Z${String.fromCharCode(65 + zones.length)}`}
+                  value={newZoneCode}
+                  onChange={e => setNewZoneCode(e.target.value)}
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-mono uppercase"
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-2.5 flex items-center justify-between">
+                <span className="text-gray-500 font-medium">Displayed Name Preview:</span>
+                <span className="font-bold text-[#172B4D] font-mono">
+                  {defaultHierarchyModel.levels[0]?.name ?? 'Zone'} – {newBusinessLabel || 'Label'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddZoneModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
+                >
+                  Create Zone
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

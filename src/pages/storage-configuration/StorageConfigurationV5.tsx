@@ -614,49 +614,75 @@ export default function StorageConfigurationV5() {
         {/* Add Zone Modal */}
         {showAddZoneModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <h3 className="text-base font-bold text-[#172B4D]">Add New Zone</h3>
                 <button onClick={() => setShowAddZoneModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
                   ✕
                 </button>
               </div>
-              <form onSubmit={handleAddZoneSubmit} className="space-y-4">
+
+              <form onSubmit={handleAddZoneSubmit} className="space-y-4 text-xs">
+                <div className="bg-green-50/70 border border-green-200 rounded-xl p-3 flex items-center gap-2 text-green-900">
+                  <span className="font-semibold">✓ Zone automatically inherits active Warehouse Hierarchy</span>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Zone Name</label>
+                  <label className="block font-semibold text-gray-700 mb-1">Hierarchy Level (Fixed)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value="Zone"
+                    className="w-full p-2.5 border border-gray-200 bg-gray-100 rounded-lg font-mono font-bold text-gray-600 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Business Label <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Zone G - Overflow"
+                    placeholder="e.g. Inbound, Cold Storage, Overflow"
                     value={newZoneName}
                     onChange={e => setNewZoneName(e.target.value)}
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-bold text-[#172B4D]"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Zone Code</label>
+                  <label className="block font-semibold text-gray-700 mb-1">Zone Code</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. ZG"
                     value={newZoneCode}
-                    onChange={e => setNewZoneCode(e.target.value)}
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-mono"
+                    onChange={e => setNewZoneCode(e.target.value.toUpperCase())}
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-mono font-bold"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Picking Strategy</label>
+                  <label className="block font-semibold text-gray-700 mb-1">Picking Strategy</label>
                   <select
                     value={newZoneStrategy}
                     onChange={e => setNewZoneStrategy(e.target.value as any)}
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
                   >
                     <option value="FEFO">FEFO (Expiry First)</option>
                     <option value="FIFO">FIFO (First In First Out)</option>
                     <option value="LIFO">LIFO (Last In First Out)</option>
                   </select>
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
+
+                {/* Displayed Name Preview */}
+                <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-2.5 flex items-center justify-between">
+                  <span className="text-gray-500 font-medium">Displayed Name Preview:</span>
+                  <span className="font-bold text-[#172B4D] font-mono">
+                    Zone – {newZoneName || 'Label'}
+                  </span>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setShowAddZoneModal(false)}
@@ -668,7 +694,7 @@ export default function StorageConfigurationV5() {
                     type="submit"
                     className="px-4 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
                   >
-                    Add Zone
+                    Create Zone
                   </button>
                 </div>
               </form>

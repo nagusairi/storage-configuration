@@ -17,7 +17,9 @@ import {
   Package,
   Wrench,
   Zap,
-  X
+  X,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel, HierarchyLevel } from '../types';
 
@@ -25,7 +27,8 @@ interface StorageNode {
   id: string;
   name: string;
   code: string;
-  levelDepth: number; // 0 = Zone, 1 = Level 1 (e.g. Aisle), 2 = Level 2 (e.g. Rack), etc.
+  levelDepth: number; // 0 = Zone (Level 1), 1 = Level 2 (e.g. Aisle), 2 = Level 3 (e.g. Rack), etc.
+  businessLabel?: string; // For Level 1
   children?: StorageNode[];
   dimensions?: { width: number; depth: number; height: number; unit: string };
   capacity?: number;
@@ -54,7 +57,7 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
       ? activeZone.customHierarchyModel
       : state.hierarchyModel;
 
-  const modelLevels = activeModel.levels; // e.g. Zone (L0), Aisle (L1), Rack (L2), Shelf (L3), Bin (L4)
+  const modelLevels = activeModel.levels;
 
   // ── Initial Mock Tree Generator ───────────────────────────────────────────
   const initialTree: StorageNode = useMemo(() => {
@@ -63,6 +66,7 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
       name: activeZone.name,
       code: activeZone.code,
       levelDepth: 0,
+      businessLabel: 'General Storage',
       children: [
         {
           id: `${activeZone.id}-aisle-a`,
@@ -146,11 +150,11 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
 
   const selectedNode = useMemo(() => findNode(treeData, selectedNodeId) ?? treeData, [treeData, selectedNodeId]);
 
-  // Determine selected level metadata
+  const isLevel1 = selectedNode.levelDepth === 0;
   const currentLevelMeta: HierarchyLevel | undefined = modelLevels[selectedNode.levelDepth];
   const childLevelMeta: HierarchyLevel | undefined = modelLevels[selectedNode.levelDepth + 1];
 
-  // ── Helper to calculate total count of nodes per level ────────────────────
+  // ── Counts By Level ───────────────────────────────────────────────────────
   const countsByLevel = useMemo(() => {
     const counts: Record<string, number> = {};
     const traverse = (node: StorageNode) => {
@@ -162,7 +166,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
     return counts;
   }, [treeData, modelLevels]);
 
-  // Total location count calculation (leaves of the tree)
   const totalBinsCount = useMemo(() => {
     let leaves = 0;
     const countLeaves = (node: StorageNode) => {
@@ -236,7 +239,7 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
   };
 
   const handleDeleteNode = (idToDelete: string) => {
-    if (idToDelete === treeData.id) return; // Cannot delete root zone
+    if (idToDelete === treeData.id) return;
     const deleteRecursive = (curr: StorageNode): StorageNode => {
       return {
         ...curr,
@@ -260,6 +263,25 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
     setTreeData(updateRecursive(treeData));
   };
 
+  // Reorder Child Node (Up or Down)
+  const handleReorderChild = (childId: string, direction: 'up' | 'down') => {
+    const updateRecursive = (curr: StorageNode): StorageNode => {
+      if (!curr.children) return curr;
+      const idx = curr.children.findIndex(c => c.id === childId);
+      if (idx === -1) {
+        return { ...curr, children: curr.children.map(updateRecursive) };
+      }
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= curr.children.length) return curr;
+
+      const newChildren = [...curr.children];
+      const [moved] = newChildren.splice(idx, 1);
+      newChildren.splice(targetIdx, 0, moved);
+      return { ...curr, children: newChildren };
+    };
+    setTreeData(updateRecursive(treeData));
+  };
+
   // ── Render Tree Node Recursively ──────────────────────────────────────────
   const renderTreeNode = (node: StorageNode) => {
     const isExpanded = expandedNodeIds.includes(node.id);
@@ -267,7 +289,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
     const hasChildren = !!node.children && node.children.length > 0;
     const levelMeta = modelLevels[node.levelDepth];
 
-    // Filter by search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchesSelf = node.name.toLowerCase().includes(q) || node.code.toLowerCase().includes(q);
@@ -302,7 +323,7 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
             <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded flex-shrink-0 ${
               isSelected ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
             }`}>
-              {levelMeta?.codePrefix || `L${node.levelDepth}`}
+              {levelMeta?.codePrefix || `L${node.levelDepth + 1}`}
             </span>
 
             <span className="truncate">{node.name}</span>
@@ -342,7 +363,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
           </div>
         </div>
 
-        {/* Dynamic Level Counters */}
         <div className="flex items-center gap-2 flex-wrap">
           {modelLevels.map((lvl, idx) => {
             const count = countsByLevel[lvl.pluralName] ?? countsByLevel[lvl.name] ?? (idx === 0 ? 1 : 0);
@@ -362,7 +382,7 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
 
       {/* ── 3-Panel Storage Layout Builder Workspace ───────────────────────── */}
       <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
-        {/* ── LEFT PANEL: Storage Structure Navigator (Tree) ──────────────── */}
+        {/* ── LEFT PANEL: Storage Structure Navigator ─────────────────────── */}
         <div className="col-span-3 bg-white border border-[#d1def0] rounded-xl shadow-xs flex flex-col min-h-0">
           <div className="p-3 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#172B4D]">
@@ -371,7 +391,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
             <span className="text-[10px] text-gray-400 font-mono">Tree View</span>
           </div>
 
-          {/* Navigator Search */}
           <div className="p-2 border-b border-gray-100 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -385,7 +404,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
             </div>
           </div>
 
-          {/* Tree Scroll Container */}
           <div className="p-2 overflow-y-auto flex-1 space-y-0.5">
             {renderTreeNode(treeData)}
           </div>
@@ -393,7 +411,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
 
         {/* ── CENTER PANEL: Storage Layout Builder Canvas ──────────────────── */}
         <div className="col-span-6 bg-white border border-[#d1def0] rounded-xl shadow-xs flex flex-col min-h-0">
-          {/* Selected Parent Header Bar */}
           <div className="p-3.5 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
             <div>
               <div className="flex items-center gap-2">
@@ -410,7 +427,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
               </p>
             </div>
 
-            {/* Contextual Action Buttons */}
             {childLevelMeta && (
               <div className="flex items-center gap-2">
                 <button
@@ -432,12 +448,11 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
             )}
           </div>
 
-          {/* Children Cards Canvas Grid */}
           <div className="p-4 overflow-y-auto flex-1 bg-[#fcfdfe]">
             {!childLevelMeta ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
                 <CheckCircle2 className="w-10 h-10 text-green-500 mb-2" />
-                <h4 className="text-sm font-bold text-[#172B4D]">Leaf Storage Node</h4>
+                <h4 className="text-sm font-bold text-[#172B4D]">Leaf Storage Location</h4>
                 <p className="text-xs text-gray-500 max-w-xs mt-1">
                   This level ({currentLevelMeta?.name}) represents the bottom endpoint of the active storage hierarchy.
                 </p>
@@ -469,7 +484,7 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {selectedNode.children.map(child => {
+                {selectedNode.children.map((child, idx) => {
                   const childSubCount = child.children?.length ?? 0;
                   const grandChildMeta = modelLevels[child.levelDepth + 1];
 
@@ -487,16 +502,41 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
                             </span>
                             <span className="text-xs font-bold text-[#172B4D] truncate">{child.name}</span>
                           </div>
-                          <button
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleDeleteNode(child.id);
-                            }}
-                            className="p-1 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                            title={`Delete ${child.name}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              disabled={idx === 0}
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleReorderChild(child.id, 'up');
+                              }}
+                              className="p-1 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 disabled:opacity-30"
+                              title="Move Up"
+                            >
+                              <ArrowUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              disabled={idx === selectedNode.children!.length - 1}
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleReorderChild(child.id, 'down');
+                              }}
+                              className="p-1 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 disabled:opacity-30"
+                              title="Move Down"
+                            >
+                              <ArrowDown className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDeleteNode(child.id);
+                              }}
+                              className="p-1 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded"
+                              title={`Delete ${child.name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="text-[11px] text-gray-500 space-y-1">
@@ -508,12 +548,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
                             <div className="flex justify-between">
                               <span>Child {grandChildMeta.pluralName}:</span>
                               <span className="font-mono font-bold text-[#172B4D]">{childSubCount}</span>
-                            </div>
-                          )}
-                          {child.capacity && (
-                            <div className="flex justify-between">
-                              <span>Capacity:</span>
-                              <span className="font-mono text-gray-700">{child.capacity} units</span>
                             </div>
                           )}
                         </div>
@@ -530,31 +564,77 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
           </div>
         </div>
 
-        {/* ── RIGHT PANEL: Properties & Actions Inspector ──────────────────── */}
+        {/* ── RIGHT PANEL: Properties Inspector (Level 1 vs Level 2+) ────────── */}
         <div className="col-span-3 bg-white border border-[#d1def0] rounded-xl shadow-xs flex flex-col min-h-0">
           <div className="p-3.5 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#172B4D]">
               <Wrench className="w-4 h-4 text-[#5C1F3D]" /> Properties Inspector
             </div>
             <span className="text-[10px] font-mono bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-bold">
-              {currentLevelMeta?.name ?? 'Node'}
+              Level {selectedNode.levelDepth + 1}: {currentLevelMeta?.name ?? 'Node'}
             </span>
           </div>
 
-          {/* Inspector Form Content */}
           <div className="p-4 overflow-y-auto flex-1 space-y-4 text-xs">
-            {/* Display Name */}
-            <div>
-              <label className="block text-gray-600 font-semibold mb-1">Display Name</label>
-              <input
-                type="text"
-                value={selectedNode.name}
-                onChange={e => handleUpdateNode({ name: e.target.value })}
-                className="w-full text-xs p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5C1F3D] font-medium"
-              />
-            </div>
+            {/* LEVEL 1 SPECIALIZED NAMING CONTROL */}
+            {isLevel1 ? (
+              <div className="bg-[#f7f8f9] border border-gray-200 rounded-xl p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#172B4D]">Level 1 Hierarchy Naming</span>
+                  <span className="text-[10px] text-gray-400">Fixed Prefix</span>
+                </div>
 
-            {/* Code */}
+                <div>
+                  <label className="block text-[11px] text-gray-500 font-semibold mb-1">
+                    Hierarchy Level Prefix (Read-Only)
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={currentLevelMeta?.name ?? 'Zone'}
+                    className="w-full text-xs p-2 border border-gray-200 bg-gray-100 rounded-lg font-mono font-bold text-gray-600 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                    Business Label
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedNode.businessLabel ?? 'General Storage'}
+                    onChange={e => {
+                      const newLabel = e.target.value;
+                      const levelName = currentLevelMeta?.name ?? 'Zone';
+                      handleUpdateNode({
+                        businessLabel: newLabel,
+                        name: `${levelName} – ${newLabel}`
+                      });
+                    }}
+                    className="w-full text-xs p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5C1F3D] font-bold text-[#172B4D]"
+                  />
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-between text-[11px]">
+                  <span className="text-gray-500">Live Preview:</span>
+                  <span className="font-mono font-bold text-[#172B4D]">
+                    {currentLevelMeta?.name ?? 'Zone'} – {selectedNode.businessLabel ?? 'General Storage'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* LEVEL 2+ INSTANCE NAMING CONTROL */
+              <div>
+                <label className="block text-gray-600 font-semibold mb-1">Instance Name</label>
+                <input
+                  type="text"
+                  value={selectedNode.name}
+                  onChange={e => handleUpdateNode({ name: e.target.value })}
+                  className="w-full text-xs p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5C1F3D] font-medium"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-gray-600 font-semibold mb-1">Node Code</label>
               <input
@@ -565,7 +645,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
               />
             </div>
 
-            {/* Hierarchy Depth Info */}
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-gray-500 font-medium">Hierarchy Level:</span>
@@ -581,7 +660,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
               </div>
             </div>
 
-            {/* Capacity & Weight */}
             <div>
               <label className="block text-gray-600 font-semibold mb-1">Storage Capacity (Units)</label>
               <input
@@ -593,56 +671,6 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
               />
             </div>
 
-            {/* Dimensions */}
-            <div>
-              <label className="block text-gray-600 font-semibold mb-1">Dimensions (W × D × H meters)</label>
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  placeholder="Width"
-                  value={selectedNode.dimensions?.width ?? ''}
-                  onChange={e =>
-                    handleUpdateNode({
-                      dimensions: {
-                        ...(selectedNode.dimensions ?? { width: 0, depth: 0, height: 0, unit: 'm' }),
-                        width: parseFloat(e.target.value) || 0
-                      }
-                    })
-                  }
-                  className="text-xs p-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Depth"
-                  value={selectedNode.dimensions?.depth ?? ''}
-                  onChange={e =>
-                    handleUpdateNode({
-                      dimensions: {
-                        ...(selectedNode.dimensions ?? { width: 0, depth: 0, height: 0, unit: 'm' }),
-                        depth: parseFloat(e.target.value) || 0
-                      }
-                    })
-                  }
-                  className="text-xs p-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Height"
-                  value={selectedNode.dimensions?.height ?? ''}
-                  onChange={e =>
-                    handleUpdateNode({
-                      dimensions: {
-                        ...(selectedNode.dimensions ?? { width: 0, depth: 0, height: 0, unit: 'm' }),
-                        height: parseFloat(e.target.value) || 0
-                      }
-                    })
-                  }
-                  className="text-xs p-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Actions Section */}
             <div className="pt-3 border-t border-gray-200 space-y-2">
               {childLevelMeta && (
                 <button
@@ -656,12 +684,12 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
                 </button>
               )}
 
-              {selectedNode.id !== treeData.id && (
+              {!isLevel1 && (
                 <button
                   onClick={() => handleDeleteNode(selectedNode.id)}
                   className="w-full px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete Selected Node
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Selected Instance
                 </button>
               )}
             </div>
