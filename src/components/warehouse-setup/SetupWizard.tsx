@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, X, Globe, Save, Copy } from 'lucide-react';
 import type { WizardStep, WizardState } from './types';
 import { Step2HierarchyDesigner } from './steps/Step2HierarchyDesigner';
 import { Step3LevelProperties } from './steps/Step3LevelProperties';
@@ -39,6 +39,8 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
   const isZoneMode = state.wizardMode === 'zone';
   const stepsList = isZoneMode ? ZONE_STEPS : WAREHOUSE_STEPS;
   const maxSteps = stepsList.length;
+  const isFinalStep = state.currentStep === maxSteps;
+  const hasErrors = state.validationResults.some(r => r.severity === 'error');
 
   const goToStep = (step: WizardStep) => {
     onChange({ ...state, currentStep: step });
@@ -54,6 +56,11 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       return;
     }
     if (state.currentStep > 1) goToStep((state.currentStep - 1) as WizardStep);
+  };
+
+  const handlePublish = () => {
+    onChange({ ...state, isDirty: false });
+    onClose();
   };
 
   const renderStep = () => {
@@ -158,12 +165,12 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
         {renderStep()}
       </div>
 
-      {/* Wizard Footer */}
-      <div className="bg-white border-t border-[#d1def0] px-6 py-3 flex items-center justify-between flex-shrink-0">
+      {/* Wizard Footer - Unified Single Bottom Action Bar */}
+      <div className="bg-white border-t border-[#d1def0] px-6 py-3.5 flex items-center justify-between flex-shrink-0 shadow-xs">
         {state.currentStep > 1 ? (
           <button
             onClick={goPrev}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
@@ -172,21 +179,57 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
           <div />
         )}
 
-        <div className="flex items-center gap-3">
-          {/* Save Draft */}
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
-            Save Draft
-          </button>
+        <div className="flex items-center gap-2.5">
+          {isFinalStep ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {}}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Save as New Template
+              </button>
 
-          {state.currentStep < maxSteps ? (
-            <button
-              onClick={goNext}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded transition-colors"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          ) : null}
+              <button
+                type="button"
+                onClick={() => onChange({ ...state, isDirty: true })}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f4f0f2] transition-colors"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save Draft
+              </button>
+
+              <button
+                type="button"
+                disabled={hasErrors}
+                onClick={handlePublish}
+                className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Globe className="w-4 h-4" />
+                Publish Configuration
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onChange({ ...state, isDirty: true })}
+                className="px-3.5 py-2 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+              >
+                Save Draft
+              </button>
+
+              <button
+                type="button"
+                onClick={goNext}
+                className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

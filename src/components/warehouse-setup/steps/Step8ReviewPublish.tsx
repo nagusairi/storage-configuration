@@ -175,32 +175,6 @@ export function Step8ReviewPublish({ state, onChange, onClose, warehouseName }: 
           </div>
         </div>
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-3 justify-end">
-        <button
-          onClick={() => {}} // Clone template logic
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <Copy className="w-4 h-4" />
-          Save as New Template
-        </button>
-        <button
-          onClick={() => onChange({ ...state, isDirty: true })} // Save draft logic
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f4f0f2] transition-colors"
-        >
-          <Save className="w-4 h-4" />
-          Save as Draft Template
-        </button>
-        <button
-          disabled={!canPublish}
-          onClick={handlePublish}
-          className="flex items-center gap-1.5 px-6 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Globe className="w-4 h-4" />
-          Publish Configuration
-        </button>
-      </div>
     </div>
   );
 }
