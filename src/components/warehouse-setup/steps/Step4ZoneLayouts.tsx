@@ -14,7 +14,9 @@ import {
   Building2,
   X,
   Lightbulb,
-  ArrowRight
+  ArrowRight,
+  Save,
+  Check
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel } from '../types';
 import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry } from '../hierarchyModelsData';
@@ -53,9 +55,12 @@ function ZoneCard({
   const [searchQuery, setSearchQuery] = useState('');
   const [showViewHierarchyModal, setShowViewHierarchyModal] = useState(false);
   const [showFullCatalogModal, setShowFullCatalogModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  // Success Banner State (shown when a model was newly created/imported)
+  const [appliedBannerInfo, setAppliedBannerInfo] = useState<{ modelName: string; isSaved: boolean } | null>(null);
 
   // Extract level 1 prefix and business label
-  // e.g. "Zone A — General Storage" -> levelPrefix = "Zone", businessLabel = "General Storage"
   const rawName = zone.name || 'Zone A';
   const nameParts = rawName.split(' — ');
   const levelPrefix = defaultHierarchyModel.levels[0]?.name ?? 'Zone';
@@ -105,7 +110,7 @@ function ZoneCard({
     return true;
   });
 
-  const handleApplyModel = (entry: HierarchyModelCatalogEntry) => {
+  const handleApplyModel = (entry: HierarchyModelCatalogEntry, isNewlyCreated = false) => {
     onUpdate({
       ...zone,
       hierarchyMode: 'custom',
@@ -115,11 +120,31 @@ function ZoneCard({
       customHierarchyModel: entry.model,
     });
     setShowAdvancedHierarchy(false);
+    if (isNewlyCreated) {
+      setAppliedBannerInfo({ modelName: entry.name, isSaved: false });
+    }
   };
 
   const handleBusinessLabelChange = (newLabel: string) => {
     const combinedName = `${levelPrefix} — ${newLabel}`;
     onUpdate({ ...zone, name: combinedName });
+  };
+
+  const handleSaveToLibrary = () => {
+    if (!appliedBannerInfo) return;
+    HIERARCHY_MODELS_CATALOG.push({
+      id: `hm-saved-${Date.now()}`,
+      name: appliedBannerInfo.modelName,
+      category: 'organization',
+      categoryLabel: 'Organization Hierarchy Models',
+      description: `Custom model created for ${zone.name}`,
+      sourceBadge: 'Organization Model',
+      updatedAt: 'Saved just now',
+      levelCount: activeModel.levels.length,
+      tags: ['Custom', 'Organization'],
+      model: activeModel,
+    });
+    setAppliedBannerInfo(prev => (prev ? { ...prev, isSaved: true } : null));
   };
 
   return (
@@ -173,6 +198,48 @@ function ZoneCard({
       {/* ── Expanded Content Canvas ────────────────────────────────────────── */}
       {expanded && (
         <div className="border-t border-[#d1def0] px-5 py-5 bg-[#f7f8f9] space-y-4">
+          {/* ── LIGHTWEIGHT SUCCESS BANNER (FOR NEWLY CREATED / LINKED MODELS) ─ */}
+          {appliedBannerInfo && (
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                  ✓
+                </div>
+                <div className="text-xs">
+                  <span className="font-bold text-purple-950 block">
+                    Hierarchy "{appliedBannerInfo.modelName}" created successfully and applied to {zone.name}.
+                  </span>
+                  <span className="text-purple-700 text-[11px]">
+                    The model is automatically linked to this zone.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!appliedBannerInfo.isSaved ? (
+                  <button
+                    type="button"
+                    onClick={handleSaveToLibrary}
+                    className="px-3 py-1.5 text-xs font-semibold text-purple-900 bg-white border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1"
+                  >
+                    <Save className="w-3.5 h-3.5" /> Save as Reusable Model
+                  </button>
+                ) : (
+                  <span className="text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Saved to Organization Models
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setAppliedBannerInfo(null)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831]"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── LEVEL 1 HIERARCHY NAMING CONTROL ───────────────────────────── */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
@@ -422,6 +489,48 @@ function ZoneCard({
                         );
                       })}
                     </div>
+
+                    {/* ── BOTTOM ADVANCED ACTIONS ──────────────────────────────── */}
+                    <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newModelName = `${businessLabel || 'Custom'} Special Hierarchy`;
+                            const newEntry: HierarchyModelCatalogEntry = {
+                              id: `hm-new-${Date.now()}`,
+                              name: newModelName,
+                              category: 'organization',
+                              categoryLabel: 'Organization Hierarchy Models',
+                              description: `Custom model created for ${zone.name}`,
+                              sourceBadge: 'Organization Model',
+                              updatedAt: 'Created just now',
+                              levelCount: 4,
+                              tags: ['Custom'],
+                              model: HIERARCHY_MODELS_CATALOG[0].model,
+                            };
+                            handleApplyModel(newEntry, true);
+                          }}
+                          className="px-3.5 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> + Create New Hierarchy Model
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowImportModal(true)}
+                          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-gray-500" /> Import Hierarchy Model
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowFullCatalogModal(true)}
+                        className="text-xs font-bold text-[#5C1F3D] hover:underline"
+                      >
+                        Browse All Models →
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -502,6 +611,65 @@ function ZoneCard({
           </div>
         </div>
       )}
+
+      {/* ── Import Hierarchy Schema Modal ─────────────────────────────────── */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-[#5C1F3D]" />
+                <h3 className="text-base font-bold text-[#172B4D]">Import Hierarchy Model</h3>
+              </div>
+              <button onClick={() => setShowImportModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              Upload a valid hierarchy JSON definition schema (.json) to import into Organization Hierarchy Models.
+            </p>
+
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <span className="text-xs font-bold text-[#5C1F3D] block">Click to select file</span>
+              <span className="text-[11px] text-gray-400">Supports JSON schema format</span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const importedEntry: HierarchyModelCatalogEntry = {
+                    id: `hm-imported-${Date.now()}`,
+                    name: `Imported Model ${Date.now().toString().slice(-4)}`,
+                    category: 'organization',
+                    categoryLabel: 'Organization Hierarchy Models',
+                    description: 'Imported from JSON schema',
+                    sourceBadge: 'Organization Model',
+                    updatedAt: 'Imported just now',
+                    levelCount: 4,
+                    tags: ['Imported'],
+                    model: HIERARCHY_MODELS_CATALOG[0].model,
+                  };
+                  handleApplyModel(importedEntry, true);
+                  setShowImportModal(false);
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
+              >
+                Import & Apply to Zone
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -510,7 +678,6 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
   const zones = state.zones;
   const defaultHierarchyModel = state.hierarchyModel;
 
-  // Streamlined Add Zone Modal State
   const [showAddZoneModal, setShowAddZoneModal] = useState(false);
   const [newBusinessLabel, setNewBusinessLabel] = useState('');
   const [newZoneCode, setNewZoneCode] = useState('');
@@ -523,7 +690,6 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
     onChange({ ...state, zones: state.zones.filter(z => z.id !== zoneId) });
   };
 
-  // Fast Streamlined Single-Click Zone Creation
   const handleAddZoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBusinessLabel.trim()) return;
@@ -538,7 +704,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
       code,
       status: 'active',
       hierarchyMode: 'default',
-      hierarchySource: 'warehouse', // Automatically inherits Warehouse Hierarchy!
+      hierarchySource: 'warehouse',
       pickingStrategy: 'FIFO',
       generation: { levels: [] },
     };
@@ -580,7 +746,6 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
         ))}
       </div>
 
-      {/* ── LIGHTWEIGHT STREAMLINED ADD ZONE MODAL ───────────────────────── */}
       {showAddZoneModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -639,7 +804,6 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                 />
               </div>
 
-              {/* Preview */}
               <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-2.5 flex items-center justify-between">
                 <span className="text-gray-500 font-medium">Displayed Name Preview:</span>
                 <span className="font-bold text-[#172B4D] font-mono">
