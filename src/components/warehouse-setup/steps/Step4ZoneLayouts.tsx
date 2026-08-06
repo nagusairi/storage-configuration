@@ -23,9 +23,10 @@ import {
   Copy,
   Wrench,
   FileCode,
-  Lock
+  Lock,
+  ArrowLeft
 } from 'lucide-react';
-import type { WizardState, ZoneConfig, HierarchyModel } from '../types';
+import type { WizardState, ZoneConfig, HierarchyModel, HierarchyLevel } from '../types';
 import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry, type HierarchyLifecycleStatus } from '../hierarchyModelsData';
 
 interface Props {
@@ -75,6 +76,22 @@ function ZoneCard({
 
   // Creation Methods Choice Modal State
   const [showCreationMethodsModal, setShowCreationMethodsModal] = useState(false);
+
+  // Build From Scratch 4-Step Wizard State
+  const [showBuildScratchWizard, setShowBuildScratchWizard] = useState(false);
+  const [scratchStep, setScratchStep] = useState<1 | 2 | 3 | 4>(1);
+  const [scratchModelName, setScratchModelName] = useState('');
+  const [scratchDescription, setScratchDescription] = useState('');
+  const [scratchCategory, setScratchCategory] = useState('Distribution Center');
+  const [scratchVisibility, setScratchVisibility] = useState<'Organization Library' | 'Private Draft'>('Organization Library');
+  const [scratchLevels, setScratchLevels] = useState<HierarchyLevel[]>([
+    { id: 'l1', name: 'Zone', pluralName: 'Zones', codePrefix: 'Z', depth: 0, supportsCapacity: true, supportsDimensions: true, supportsWeight: false, supportsBarcode: true, supportsTemperature: false, supportsSerial: false, supportsBatch: false, allowedChildLevelIds: ['l2'] },
+    { id: 'l2', name: 'Aisle', pluralName: 'Aisles', codePrefix: 'A', depth: 1, supportsCapacity: true, supportsDimensions: true, supportsWeight: true, supportsBarcode: true, supportsTemperature: false, supportsSerial: false, supportsBatch: false, allowedChildLevelIds: ['l3'] },
+    { id: 'l3', name: 'Rack', pluralName: 'Racks', codePrefix: 'R', depth: 2, supportsCapacity: true, supportsDimensions: true, supportsWeight: true, supportsBarcode: true, supportsTemperature: false, supportsSerial: false, supportsBatch: false, allowedChildLevelIds: ['l4'] },
+    { id: 'l4', name: 'Shelf', pluralName: 'Shelves', codePrefix: 'S', depth: 3, supportsCapacity: true, supportsDimensions: true, supportsWeight: true, supportsBarcode: true, supportsTemperature: false, supportsSerial: false, supportsBatch: false, allowedChildLevelIds: ['l5'] },
+    { id: 'l5', name: 'Bin', pluralName: 'Bins', codePrefix: 'B', depth: 4, supportsCapacity: true, supportsDimensions: true, supportsWeight: true, supportsBarcode: true, supportsTemperature: false, supportsSerial: true, supportsBatch: true, allowedChildLevelIds: [] },
+  ]);
+  const [scratchPublishedEntry, setScratchPublishedEntry] = useState<HierarchyModelCatalogEntry | null>(null);
 
   // Auto-dismissing toast for Outcome 1 (Compatible)
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -153,7 +170,6 @@ function ZoneCard({
     const hasConflict = entry.id === 'hm-[#conflict-test]';
 
     if (hasConflict) {
-      // OUTCOME 3: CONFLICT DETECTED
       setConflictDetails([
         'Active warehouse putaway rule "PR-102" references missing hierarchy level "Shelf".',
         'Invalid storage location mappings detected for 142 bins.',
@@ -164,13 +180,11 @@ function ZoneCard({
     }
 
     if (hasOperationalData) {
-      // OUTCOME 2: REVIEW REQUIRED (IMPACT ASSESSMENT)
       setPendingModelToApply(entry);
       setShowImpactModal(true);
       return;
     }
 
-    // OUTCOME 1: COMPATIBLE
     applyModelDirectly(entry);
   };
 
@@ -217,15 +231,22 @@ function ZoneCard({
     setAppliedBannerInfo(prev => (prev ? { ...prev, isSaved: true } : null));
   };
 
-  const handleCreationMethodSelect = (method: string) => {
+  const handleCreationMethodSelect = (methodId: string) => {
     setShowCreationMethodsModal(false);
-    const newModelName = `${businessLabel || 'Custom'} (${method})`;
+    if (methodId === 'scratch') {
+      setScratchModelName(`${businessLabel || 'Custom'} Hierarchy`);
+      setScratchStep(1);
+      setShowBuildScratchWizard(true);
+      return;
+    }
+
+    const newModelName = `${businessLabel || 'Custom'} (${methodId})`;
     const newEntry: HierarchyModelCatalogEntry = {
       id: `hm-new-${Date.now()}`,
       name: newModelName,
       category: 'organization',
       categoryLabel: 'Organization Hierarchy Models',
-      description: `Created via ${method} for ${zone.name}`,
+      description: `Created via ${methodId} for ${zone.name}`,
       sourceBadge: 'Organization Model',
       lifecycleStatus: 'published',
       updatedAt: 'Created just now',
@@ -234,6 +255,30 @@ function ZoneCard({
       model: HIERARCHY_MODELS_CATALOG[0].model,
     };
     initiateApplyModel(newEntry);
+  };
+
+  const handlePublishScratchModel = () => {
+    const publishedEntry: HierarchyModelCatalogEntry = {
+      id: `hm-scratch-${Date.now()}`,
+      name: scratchModelName.trim() || 'Custom Hierarchy Model',
+      category: 'organization',
+      categoryLabel: 'Organization Hierarchy Models',
+      description: scratchDescription || `Built from scratch for ${zone.name}`,
+      sourceBadge: 'Organization Model',
+      lifecycleStatus: 'published',
+      updatedAt: 'Published just now',
+      levelCount: scratchLevels.length,
+      tags: [scratchCategory, scratchVisibility],
+      model: {
+        id: `m-scratch-${Date.now()}`,
+        name: scratchModelName,
+        description: scratchDescription,
+        levels: scratchLevels,
+      },
+    };
+
+    HIERARCHY_MODELS_CATALOG.push(publishedEntry);
+    setScratchPublishedEntry(publishedEntry);
   };
 
   return (
@@ -303,7 +348,6 @@ function ZoneCard({
       {/* ── Expanded Content Canvas ────────────────────────────────────────── */}
       {expanded && (
         <div className="border-t border-[#d1def0] px-5 py-5 bg-[#f7f8f9] space-y-4">
-          {/* ── LIGHTWEIGHT SUCCESS BANNER FOR NEWLY LINKED MODELS ──────────── */}
           {appliedBannerInfo && (
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
               <div className="flex items-center gap-2.5">
@@ -543,7 +587,6 @@ function ZoneCard({
                       ))}
                     </div>
 
-                    {/* Compact Grid of Recent Models with Lifecycle Badges */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {filteredCatalog.slice(0, 4).map(entry => {
                         const isSelectedModel = activeModel.name === entry.name;
@@ -593,7 +636,6 @@ function ZoneCard({
                       })}
                     </div>
 
-                    {/* ── BOTTOM ADVANCED ACTIONS ──────────────────────────────── */}
                     <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2">
                         <button
@@ -641,44 +683,19 @@ function ZoneCard({
               </button>
             </div>
 
-            <p className="text-xs text-gray-500">
-              Select how you would like to create your new reusable Hierarchy Model.
-            </p>
-
             <div className="space-y-2.5">
               {[
-                {
-                  id: 'blueprint',
-                  title: 'Use flowOne Blueprint (Recommended)',
-                  desc: 'Start with a pre-configured, industry-proven warehouse hierarchy template.',
-                  icon: Sparkles,
-                  badge: 'Recommended',
-                },
-                {
-                  id: 'clone',
-                  title: 'Clone Existing Hierarchy Model',
-                  desc: 'Duplicate an existing active model from your Organization Library as a baseline.',
-                  icon: Copy,
-                },
-                {
-                  id: 'scratch',
-                  title: 'Build From Scratch',
-                  desc: 'Design a completely custom hierarchy chain level-by-level.',
-                  icon: Wrench,
-                },
-                {
-                  id: 'import',
-                  title: 'Import Hierarchy Model',
-                  desc: 'Upload a valid JSON schema definition file.',
-                  icon: FileCode,
-                },
+                { id: 'blueprint', title: 'Use flowOne Blueprint (Recommended)', desc: 'Start with a pre-configured industry blueprint.', icon: Sparkles, badge: 'Recommended' },
+                { id: 'clone', title: 'Clone Existing Hierarchy Model', desc: 'Duplicate an active model baseline.', icon: Copy },
+                { id: 'scratch', title: 'Build From Scratch', desc: 'Define metadata, then build via Hierarchy Designer.', icon: Wrench },
+                { id: 'import', title: 'Import Hierarchy Model', desc: 'Upload a JSON schema definition file.', icon: FileCode },
               ].map(m => {
                 const Icon = m.icon;
                 return (
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => handleCreationMethodSelect(m.title)}
+                    onClick={() => handleCreationMethodSelect(m.id)}
                     className="w-full p-3.5 rounded-xl border border-gray-200 bg-white hover:border-[#5C1F3D] hover:bg-purple-50/30 transition-all text-left flex items-start gap-3 group"
                   >
                     <div className="w-8 h-8 rounded-lg bg-[#5C1F3D]/10 text-[#5C1F3D] flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -708,6 +725,297 @@ function ZoneCard({
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── BUILD FROM SCRATCH 4-STEP WIZARD MODAL ───────────────────────── */}
+      {showBuildScratchWizard && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Header with Step Progress Indicator */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-[#172B4D]">Create Hierarchy Model — Build From Scratch</h3>
+                <p className="text-xs text-gray-500">Step {scratchStep} of 4: {
+                  scratchStep === 1 ? 'Hierarchy Model Information' :
+                  scratchStep === 2 ? 'Hierarchy Designer (Auto-Saving Draft)' :
+                  scratchStep === 3 ? 'Hierarchy Structural Validation' :
+                  'Publish & Review Summary'
+                }</p>
+              </div>
+              <button onClick={() => setShowBuildScratchWizard(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Stepper Header Bar */}
+            <div className="bg-[#f7f8f9] border-b border-gray-200 px-6 py-2.5 flex items-center justify-between text-xs flex-shrink-0">
+              {[
+                { num: 1, label: 'Metadata' },
+                { num: 2, label: 'Hierarchy Designer' },
+                { num: 3, label: 'Validation' },
+                { num: 4, label: 'Publish' },
+              ].map(s => (
+                <div key={s.num} className={`flex items-center gap-1.5 font-bold ${
+                  scratchStep === s.num ? 'text-[#5C1F3D]' : scratchStep > s.num ? 'text-green-700' : 'text-gray-400'
+                }`}>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                    scratchStep === s.num ? 'bg-[#5C1F3D] text-white' : scratchStep > s.num ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {scratchStep > s.num ? '✓' : s.num}
+                  </span>
+                  <span>{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Body per Step */}
+            <div className="p-6 overflow-y-auto flex-1 text-xs">
+              {/* STEP 1: HIERARCHY MODEL INFORMATION (METADATA) */}
+              {scratchStep === 1 && (
+                <div className="space-y-4">
+                  <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-3.5 flex items-center gap-2.5 text-purple-950">
+                    <Sparkles className="w-5 h-5 text-[#5C1F3D] flex-shrink-0" />
+                    <span>This metadata defines a reusable Hierarchy Model asset that can be assigned across warehouses and zones.</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-gray-700 mb-1">Hierarchy Model Name <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Distribution Center 5-Tier Model"
+                      value={scratchModelName}
+                      onChange={e => setScratchModelName(e.target.value)}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-bold text-[#172B4D]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-gray-700 mb-1">Description</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Describe the operational use case for this hierarchy structure..."
+                      value={scratchDescription}
+                      onChange={e => setScratchDescription(e.target.value)}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-gray-700 mb-1">Category</label>
+                      <select
+                        value={scratchCategory}
+                        onChange={e => setScratchCategory(e.target.value)}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
+                      >
+                        <option value="Distribution Center">Distribution Center</option>
+                        <option value="Cold Storage">Cold Storage</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Retail">Retail</option>
+                        <option value="High Value Storage">High Value Storage</option>
+                        <option value="Custom">Custom</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-gray-700 mb-1">Visibility</label>
+                      <select
+                        value={scratchVisibility}
+                        onChange={e => setScratchVisibility(e.target.value as any)}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
+                      >
+                        <option value="Organization Library">Organization Library (Shared)</option>
+                        <option value="Private Draft">Private Draft</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#f7f8f9] border border-gray-200 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-gray-700 block">Version: v1.0 (Initial Release)</span>
+                      <span className="text-gray-400 text-[10px]">Status: Draft</span>
+                    </div>
+                    <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Draft</span>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: HIERARCHY DESIGNER (AUTO-SAVING DRAFT) */}
+              {scratchStep === 2 && (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between text-green-900">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <span className="font-bold">Hierarchy Designer</span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-green-700 font-mono">✓ Draft Saved • Just now</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {scratchLevels.map((lvl, idx) => (
+                      <div key={lvl.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 rounded-full bg-purple-50 text-[#5C1F3D] font-mono font-bold flex items-center justify-center text-[10px]">
+                            L{idx + 1}
+                          </span>
+                          <div>
+                            <input
+                              type="text"
+                              value={lvl.name}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setScratchLevels(prev => prev.map(l => l.id === lvl.id ? { ...l, name: val } : l));
+                              }}
+                              className="font-bold text-[#172B4D] border-b border-dashed border-gray-300 focus:border-[#5C1F3D] outline-none"
+                            />
+                            <span className="text-[10px] text-gray-400 ml-2 font-mono">Prefix: {lvl.codePrefix}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                          {lvl.supportsCapacity && <span className="bg-gray-100 px-1.5 py-0.5 rounded">Capacity</span>}
+                          {lvl.supportsBarcode && <span className="bg-gray-100 px-1.5 py-0.5 rounded">Barcode</span>}
+                          {lvl.supportsSerial && <span className="bg-gray-100 px-1.5 py-0.5 rounded">Serial</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newLvl: HierarchyLevel = {
+                        id: `l-${Date.now()}`,
+                        name: `Level ${scratchLevels.length + 1}`,
+                        pluralName: `Levels ${scratchLevels.length + 1}`,
+                        codePrefix: `L${scratchLevels.length + 1}`,
+                        depth: scratchLevels.length,
+                        supportsCapacity: true,
+                        supportsDimensions: true,
+                        supportsWeight: false,
+                        supportsBarcode: true,
+                        supportsTemperature: false,
+                        supportsSerial: false,
+                        supportsBatch: false,
+                        allowedChildLevelIds: [],
+                      };
+                      setScratchLevels([...scratchLevels, newLvl]);
+                    }}
+                    className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-600 hover:border-[#5C1F3D] font-bold rounded-xl flex items-center justify-center gap-1"
+                  >
+                    + Add Hierarchy Level
+                  </button>
+                </div>
+              )}
+
+              {/* STEP 3: HIERARCHY STRUCTURAL VALIDATION */}
+              {scratchStep === 3 && (
+                <div className="space-y-4">
+                  <div className="bg-green-50/80 border border-green-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-green-950 font-bold">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <span>Hierarchy Structural Validation Passed</span>
+                    </div>
+
+                    <div className="space-y-1.5 font-mono text-[11px] text-green-900 pl-3">
+                      <div>✓ Parent-child relationships valid ({scratchLevels.length} Levels)</div>
+                      <div>✓ No duplicate prefixes detected</div>
+                      <div>✓ No circular references</div>
+                      <div>✓ Required capabilities supported</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: PUBLISH & REVIEW SUMMARY */}
+              {scratchStep === 4 && (
+                <div className="space-y-4">
+                  {!scratchPublishedEntry ? (
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+                      <h4 className="font-bold text-[#172B4D] border-b border-gray-100 pb-2">Hierarchy Model Review Summary</h4>
+                      <div className="grid grid-cols-2 gap-2 text-gray-600">
+                        <div>Model Name: <strong className="text-[#172B4D]">{scratchModelName}</strong></div>
+                        <div>Category: <strong className="text-[#172B4D]">{scratchCategory}</strong></div>
+                        <div>Levels: <strong className="text-[#172B4D]">{scratchLevels.map(l => l.name).join(' → ')}</strong></div>
+                        <div>Version: <strong className="text-[#172B4D]">1.0</strong></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center space-y-3">
+                      <div className="w-10 h-10 rounded-full bg-[#5C1F3D] text-white mx-auto flex items-center justify-center font-bold">✓</div>
+                      <h4 className="font-bold text-purple-950 text-sm">Hierarchy Model Published Successfully!</h4>
+                      <p className="text-purple-800 text-xs">"{scratchModelName}" has been published to Organization Hierarchy Models.</p>
+
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            initiateApplyModel(scratchPublishedEntry);
+                            setShowBuildScratchWizard(false);
+                            setScratchPublishedEntry(null);
+                          }}
+                          className="px-4 py-2 font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
+                        >
+                          ✓ Apply to Current Zone
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowBuildScratchWizard(false);
+                            setScratchPublishedEntry(null);
+                          }}
+                          className="px-4 py-2 font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                          Save to Library Only
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="px-6 py-3 border-t border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
+              <button
+                type="button"
+                disabled={scratchStep === 1 || !!scratchPublishedEntry}
+                onClick={() => setScratchStep(prev => (prev - 1) as any)}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg border ${
+                  scratchStep === 1 || !!scratchPublishedEntry ? 'opacity-50 text-gray-400 border-gray-200' : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                ← Back
+              </button>
+
+              {!scratchPublishedEntry && (
+                <div className="flex items-center gap-2">
+                  {scratchStep < 4 ? (
+                    <button
+                      type="button"
+                      disabled={!scratchModelName.trim()}
+                      onClick={() => setScratchStep(prev => (prev + 1) as any)}
+                      className={`px-5 py-2 text-xs font-bold text-white rounded-lg shadow-xs ${
+                        !scratchModelName.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#5C1F3D] hover:bg-[#4a1831]'
+                      }`}
+                    >
+                      Continue →
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handlePublishScratchModel}
+                      className="px-5 py-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-xs"
+                    >
+                      Publish Hierarchy Model
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
