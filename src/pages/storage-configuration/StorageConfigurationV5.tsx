@@ -195,14 +195,18 @@ export default function StorageConfigurationV5() {
 
   const handleAddZoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newZoneName || !newZoneCode) return;
+    if (!newZoneName.trim()) return;
+    const char = String.fromCharCode(65 + currentZones.length);
+    const code = newZoneCode.trim().toUpperCase() || `Z${char}`;
     const newZone: ZoneConfig = {
       id: `zone-${Date.now()}`,
-      name: newZoneName,
-      code: newZoneCode.toUpperCase(),
+      name: `Zone — ${newZoneName.trim()}`,
+      businessName: newZoneName.trim(),
+      code,
       status: 'active',
+      configStatus: 'not-configured',
       hierarchyMode: 'default',
-      pickingStrategy: newZoneStrategy,
+      pickingStrategy: 'FIFO',
       generation: {
         levels: [
           { levelId: 'lvl-aisle', levelName: 'Aisle', count: 4 },
@@ -1012,7 +1016,7 @@ export default function StorageConfigurationV5() {
             />
 
             <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-              <div className="w-screen max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
+              <form onSubmit={handleAddZoneSubmit} className="w-screen max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
                 
                 {/* Drawer Header */}
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-[#f7f8f9]">
@@ -1021,6 +1025,7 @@ export default function StorageConfigurationV5() {
                     <p className="text-xs text-gray-500">Configure operational zone under warehouse hierarchy</p>
                   </div>
                   <button
+                    type="button"
                     onClick={handleCloseAddZoneDrawer}
                     className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 rounded-md transition-colors"
                     title="Close Drawer"
@@ -1035,7 +1040,7 @@ export default function StorageConfigurationV5() {
                     <span className="font-semibold text-xs">✓ Zone automatically inherits active Warehouse Hierarchy</span>
                   </div>
 
-                  <form id="pub-add-zone-form" onSubmit={handleAddZoneSubmit} className="space-y-4">
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-1">
                         Hierarchy Level (Fixed)
@@ -1082,7 +1087,7 @@ export default function StorageConfigurationV5() {
                         Zone – {newZoneName || 'Label'}
                       </span>
                     </div>
-                  </form>
+                  </div>
                 </div>
 
                 {/* Drawer Footer (Fixed Action Buttons) */}
@@ -1096,13 +1101,12 @@ export default function StorageConfigurationV5() {
                   </button>
                   <button
                     type="submit"
-                    form="pub-add-zone-form"
                     className="h-[32px] px-5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
                   >
                     Create Zone
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}

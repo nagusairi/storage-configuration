@@ -1950,7 +1950,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
+            <form onSubmit={handleAddZoneSubmit} className="w-screen max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
               
               {/* Drawer Header */}
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-[#f7f8f9]">
@@ -1959,6 +1959,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                   <p className="text-xs text-gray-500">Configure operational zone under warehouse hierarchy</p>
                 </div>
                 <button
+                  type="button"
                   onClick={handleCloseAddZoneDrawer}
                   className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 rounded-md transition-colors"
                   title="Close Drawer"
@@ -1974,7 +1975,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                   <span>Zone will automatically inherit the active <strong>Warehouse Hierarchy</strong>.</span>
                 </div>
 
-                <form id="step4-add-zone-form" onSubmit={handleAddZoneSubmit} className="space-y-4">
+                <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">
                       Hierarchy Level (Fixed)
@@ -2020,7 +2021,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                       {defaultHierarchyModel.levels[0]?.name ?? 'Zone'} – {newBusinessLabel || 'Label'}
                     </span>
                   </div>
-                </form>
+                </div>
               </div>
 
               {/* Drawer Footer (Fixed Action Buttons) */}
@@ -2034,13 +2035,12 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                 </button>
                 <button
                   type="submit"
-                  form="step4-add-zone-form"
                   className="h-[32px] px-5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
                 >
                   Create Zone
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
