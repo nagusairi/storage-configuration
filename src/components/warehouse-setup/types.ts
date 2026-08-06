@@ -132,11 +132,17 @@ export interface WarehouseKPIs {
   lastPublished: string;
 }
 
+export type MigrationStrategy = 'automatic' | 'manual' | 'scheduled';
+export type WizardMode = 'warehouse' | 'zone';
+
 // ---- Wizard State ----
 
 export interface WizardState {
   currentStep: WizardStep;
   returnToStep?: WizardStep;
+  wizardMode?: WizardMode;
+  targetZoneId?: string;
+  migrationStrategy?: MigrationStrategy;
   selectedMethod?: SetupMethod;
   selectedTemplateId?: string;
   hierarchyModel: HierarchyModel;

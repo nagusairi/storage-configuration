@@ -86,6 +86,10 @@ export default function StorageConfigurationV3() {
   const currentZones = localZones ?? rawConfig.zones ?? [];
   const config: WarehouseConfig = { ...rawConfig, zones: currentZones };
 
+  // Edit Published Zone modal state
+  const [showEditPublishedZoneModal, setShowEditPublishedZoneModal] = useState(false);
+  const [targetZoneForEdit, setTargetZoneForEdit] = useState<ZoneConfig | null>(null);
+
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleWarehouseChange = (id: string) => {
     setSelectedWarehouseId(id);
@@ -108,6 +112,35 @@ export default function StorageConfigurationV3() {
     } else {
       openWizard(undefined, 1, originStep);
     }
+  };
+
+  const handleConfigureZoneClick = (zone: ZoneConfig) => {
+    setShowWarehouseSetup(false);
+    const hasDependencies = DEPENDENT_ZONE_IDS.includes(zone.id);
+
+    if (config.configStatus === 'published' && hasDependencies) {
+      // Direct editing blocked -> Display Edit Published Zone modal
+      setTargetZoneForEdit(zone);
+      setShowEditPublishedZoneModal(true);
+    } else {
+      // Direct Zone Wizard launch for unused zones
+      openZoneWizard(zone);
+    }
+  };
+
+  const openZoneWizard = (zone: ZoneConfig) => {
+    setShowEditPublishedZoneModal(false);
+    setWizardState({
+      currentStep: 1,
+      wizardMode: 'zone',
+      targetZoneId: zone.id,
+      selectedMethod: 'scratch',
+      hierarchyModel: zone.customHierarchyModel ?? config.activeHierarchyModel ?? STANDARD_6_LEVEL,
+      zones: [zone],
+      namingRules: { ...config.namingRules },
+      validationResults: [],
+      isDirty: false,
+    });
   };
 
   const openWizard = (method?: SetupMethod, step?: WizardStep, returnToStep?: WizardStep) => {
@@ -416,10 +449,10 @@ export default function StorageConfigurationV3() {
                         </button>
 
                         <button
-                          onClick={() => handleEditHierarchyClick(3)}
-                          className="px-3 py-1.5 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors"
+                          onClick={() => handleConfigureZoneClick(zone)}
+                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-2xs"
                         >
-                          Edit Hierarchy
+                          Configure Zone
                         </button>
 
                         {/* Delete Action Button */}
@@ -557,6 +590,74 @@ export default function StorageConfigurationV3() {
           onContinueDraft={handleContinueDraft}
           onCancel={() => setShowProtectionModal(false)}
         />
+
+        {/* ── Edit Published Zone Modal (Dependency Analysis) ───────────────── */}
+        {showEditPublishedZoneModal && targetZoneForEdit && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-amber-200 max-w-lg w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0">
+                  <ShieldAlert className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#172B4D]">Edit Published Zone</h3>
+                  <p className="text-xs text-amber-700 font-semibold mt-0.5">
+                    {targetZoneForEdit.name} ({targetZoneForEdit.code}) is currently Published and actively used.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4 text-xs text-amber-900 space-y-2">
+                <p className="font-semibold text-amber-950">The following operational dependencies were found:</p>
+                <ul className="space-y-1 font-mono text-[11px] text-amber-900 pl-2">
+                  <li>• 1,248 Configured Storage Locations</li>
+                  <li>• 352 Active Inventory Items</li>
+                  <li>• 3 Active Putaway Rules</li>
+                  <li>• 2 Picking Strategies</li>
+                </ul>
+                <p className="text-[11px] text-amber-800/90 pt-1 italic">
+                  Changes to the hierarchy or storage structure may impact existing warehouse operations. Direct editing is not permitted. Choose how you would like to continue:
+                </p>
+              </div>
+
+              <div className="space-y-2.5 pt-1">
+                <button
+                  onClick={() => openZoneWizard(targetZoneForEdit)}
+                  className="w-full text-left p-3.5 rounded-xl border-2 border-[#5C1F3D] bg-white ring-2 ring-[#5C1F3D]/20 shadow-xs hover:bg-[#fdfafb] transition-all flex items-center justify-between group"
+                >
+                  <div>
+                    <span className="text-xs font-bold text-[#5C1F3D] block">Create Draft Version (Recommended)</span>
+                    <span className="text-[11px] text-gray-500">Safely edit hierarchy & rules in a draft environment. Live operations remain uninterrupted.</span>
+                  </div>
+                  <span className="text-[10px] font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded-full flex-shrink-0 ml-2">Recommended</span>
+                </button>
+
+                <button
+                  onClick={() => openZoneWizard(targetZoneForEdit)}
+                  className="w-full text-left p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all flex items-center justify-between"
+                >
+                  <div>
+                    <span className="text-xs font-bold text-[#172B4D] block">Continue Existing Draft</span>
+                    <span className="text-[11px] text-gray-500">Resume pending draft updates for this zone.</span>
+                  </div>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditPublishedZoneModal(false);
+                    setTargetZoneForEdit(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Add Zone Modal ────────────────────────────────────────────────── */}
         {showAddZoneModal && (

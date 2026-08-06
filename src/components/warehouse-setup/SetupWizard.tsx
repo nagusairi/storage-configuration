@@ -16,7 +16,7 @@ interface SetupWizardProps {
   warehouseName: string;
 }
 
-const STEPS: { id: WizardStep; label: string; short: string }[] = [
+const WAREHOUSE_STEPS: { id: WizardStep; label: string; short: string }[] = [
   { id: 1, label: 'Hierarchy Model', short: 'Hierarchy' },
   { id: 2, label: 'Level Properties', short: 'Properties' },
   { id: 3, label: 'Zone Layouts', short: 'Zones' },
@@ -26,13 +26,26 @@ const STEPS: { id: WizardStep; label: string; short: string }[] = [
   { id: 7, label: 'Review & Publish', short: 'Publish' },
 ];
 
+const ZONE_STEPS: { id: WizardStep; label: string; short: string }[] = [
+  { id: 1, label: 'Hierarchy Model', short: 'Hierarchy' },
+  { id: 2, label: 'Level Properties', short: 'Properties' },
+  { id: 3, label: 'Generate Layout', short: 'Generate' },
+  { id: 4, label: 'Naming & Rules', short: 'Rules' },
+  { id: 5, label: 'Validation', short: 'Validate' },
+  { id: 6, label: 'Review & Publish', short: 'Publish' },
+];
+
 export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWizardProps) {
+  const isZoneMode = state.wizardMode === 'zone';
+  const stepsList = isZoneMode ? ZONE_STEPS : WAREHOUSE_STEPS;
+  const maxSteps = stepsList.length;
+
   const goToStep = (step: WizardStep) => {
     onChange({ ...state, currentStep: step });
   };
 
   const goNext = () => {
-    if (state.currentStep < 7) goToStep((state.currentStep + 1) as WizardStep);
+    if (state.currentStep < maxSteps) goToStep((state.currentStep + 1) as WizardStep);
   };
 
   const goPrev = () => {
@@ -44,6 +57,24 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
   };
 
   const renderStep = () => {
+    if (isZoneMode) {
+      switch (state.currentStep) {
+        case 1: return (
+          <Step2HierarchyDesigner
+            state={state}
+            onChange={onChange}
+            onFinishEdit={() => goNext()}
+          />
+        );
+        case 2: return <Step3LevelProperties state={state} onChange={onChange} />;
+        case 3: return <Step5GenerateLayout state={state} onChange={onChange} />;
+        case 4: return <Step6NamingRules state={state} onChange={onChange} />;
+        case 5: return <Step7Validation state={state} onChange={onChange} onGoToStep={goToStep} />;
+        case 6: return <Step8ReviewPublish state={state} onChange={onChange} onClose={onClose} warehouseName={warehouseName} />;
+        default: return null;
+      }
+    }
+
     switch (state.currentStep) {
       case 1: return (
         <Step2HierarchyDesigner
@@ -73,7 +104,9 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       {/* Wizard Header */}
       <div className="bg-white border-b border-[#d1def0] px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-sm font-semibold text-[#172B4D]">Warehouse Configuration</h2>
+          <h2 className="text-sm font-semibold text-[#172B4D]">
+            {isZoneMode ? 'Zone Configuration Wizard' : 'Warehouse Configuration'}
+          </h2>
           <p className="text-xs text-gray-500 mt-0.5">{warehouseName}</p>
         </div>
         <button
@@ -88,10 +121,10 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       {/* Step Indicator */}
       <div className="bg-white border-b border-[#d1def0] px-6 py-3 flex-shrink-0">
         <div className="flex items-center gap-0 overflow-x-auto">
-          {STEPS.map((step, idx) => {
+          {stepsList.map((step, idx) => {
             const isCompleted = step.id < state.currentStep;
             const isCurrent = step.id === state.currentStep;
-            const isLast = idx === STEPS.length - 1;
+            const isLast = idx === stepsList.length - 1;
 
             return (
               <React.Fragment key={step.id}>
@@ -145,7 +178,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
             Save Draft
           </button>
 
-          {state.currentStep < 7 ? (
+          {state.currentStep < maxSteps ? (
             <button
               onClick={goNext}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded transition-colors"
