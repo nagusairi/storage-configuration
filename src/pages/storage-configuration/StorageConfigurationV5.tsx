@@ -10,6 +10,7 @@ import { OverviewTab } from '../../components/warehouse-setup/OverviewTab';
 import { PublishedProtectionModal } from '../../components/warehouse-setup/modals/PublishedProtectionModal';
 import { WarehouseHubScreen } from '../../components/warehouse-setup/WarehouseHubScreen';
 import { WarehouseCompareModal } from '../../components/warehouse-setup/modals/WarehouseCompareModal';
+import { ZoneManagerWizard } from '../../components/warehouse-setup/ZoneManagerWizard';
 
 function getZoneActionLabel(status?: ConfigStatus, isCompact = false): string {
   if (status === 'draft') return 'Resume Setup';
@@ -95,6 +96,9 @@ export default function StorageConfigurationV5() {
   // Edit Published Zone modal state
   const [showEditPublishedZoneModal, setShowEditPublishedZoneModal] = useState(false);
   const [targetZoneForEdit, setTargetZoneForEdit] = useState<ZoneConfig | null>(null);
+
+  // Dedicated Zone Manager Wizard state
+  const [showZoneManagerWizard, setShowZoneManagerWizard] = useState(false);
 
   // Active warehouse configuration data
   const rawConfig = MOCK_WAREHOUSE_CONFIGS[selectedWarehouseId] ?? MOCK_WAREHOUSE_CONFIGS['wh-1'];
@@ -556,10 +560,10 @@ export default function StorageConfigurationV5() {
                   </button>
 
                   <button
-                    onClick={() => openWizard(undefined, 3)}
+                    onClick={() => setShowZoneManagerWizard(true)}
                     className="h-[32px] px-3.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-[3px] transition-colors whitespace-nowrap"
                   >
-                    Manage Zones
+                    Zone Manager
                   </button>
                 </div>
               </div>
@@ -873,8 +877,17 @@ export default function StorageConfigurationV5() {
       }}
       disableTemplatePadding
     >
-      <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup ? 'p-0' : 'p-4 sm:p-5'}`}>
-        {wizardState ? (
+      <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup || showZoneManagerWizard ? 'p-0' : 'p-4 sm:p-5'}`}>
+        {showZoneManagerWizard ? (
+          <ZoneManagerWizard
+            config={config}
+            onSave={(updatedZones) => {
+              setLocalZones(updatedZones);
+              setShowZoneManagerWizard(false);
+            }}
+            onClose={() => setShowZoneManagerWizard(false)}
+          />
+        ) : wizardState ? (
           <SetupWizard
             state={wizardState}
             onChange={setWizardState}
