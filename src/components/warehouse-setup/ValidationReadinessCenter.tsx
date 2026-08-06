@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   CheckCircle2, AlertTriangle, XCircle, RefreshCw, ArrowRight, Search,
-  Filter, ShieldCheck, Activity, Layers, MapPin, Package, FileText, ChevronRight, X, Info
+  Filter, ShieldCheck, Activity, Layers, MapPin, Package, FileText, ChevronRight, X, Info, Check
 } from 'lucide-react';
 import type { WarehouseConfig, ValidationResult, ValidationSeverity, WizardStep, EntryTab } from './types';
 
