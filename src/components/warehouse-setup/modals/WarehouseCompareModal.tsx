@@ -56,54 +56,57 @@ export function WarehouseCompareModal({
       },
     },
     {
-      label: 'Hierarchy Model',
-      getter: (w: WarehouseConfig) => w.activeHierarchyModel?.name ?? 'Standard Blueprint',
+      label: 'Active Hierarchy Model',
+      getter: (w: WarehouseConfig) => w.configStatus === 'not-configured' ? 'Not Configured' : (w.activeHierarchyModel?.name ?? 'Standard Blueprint'),
       render: (w: WarehouseConfig) => (
-        <span className="text-xs font-semibold text-[#172B4D]">
-          {w.activeHierarchyModel?.name ?? 'Standard Blueprint'}
+        <span className={`text-xs font-semibold ${w.configStatus === 'not-configured' ? 'text-gray-400 font-medium italic' : 'text-[#172B4D]'}`}>
+          {w.configStatus === 'not-configured' ? 'Not Configured' : (w.activeHierarchyModel?.name ?? 'Standard Blueprint')}
         </span>
       ),
     },
     {
       label: 'Template Source',
-      getter: (w: WarehouseConfig) => w.templateUsed ?? 'Standard Template',
+      getter: (w: WarehouseConfig) => w.configStatus === 'not-configured' ? 'Not Configured' : (w.templateUsed ?? 'Standard Template'),
       render: (w: WarehouseConfig) => (
-        <span className="text-xs text-gray-600 font-medium">
-          {w.templateUsed ?? 'Standard Template'}
+        <span className={`text-xs font-medium ${w.configStatus === 'not-configured' ? 'text-gray-400 italic' : 'text-gray-600'}`}>
+          {w.configStatus === 'not-configured' ? 'Not Configured' : (w.templateUsed ?? 'Standard Template')}
         </span>
       ),
     },
     {
       label: 'Zone Count',
-      getter: (w: WarehouseConfig) => w.zones.length,
+      getter: (w: WarehouseConfig) => w.configStatus === 'not-configured' ? '—' : w.zones.length,
       render: (w: WarehouseConfig) => (
-        <span className="text-xs font-bold text-[#172B4D]">
-          {w.zones.length} Zones
+        <span className={`text-xs ${w.configStatus === 'not-configured' ? 'text-gray-400 font-normal' : 'font-bold text-[#172B4D]'}`}>
+          {w.configStatus === 'not-configured' ? '—' : `${w.zones.length} Zones`}
         </span>
       ),
     },
     {
       label: 'Storage Locations',
-      getter: (w: WarehouseConfig) => w.totalLocations ?? 14400,
+      getter: (w: WarehouseConfig) => w.configStatus === 'not-configured' ? '—' : (w.totalLocations ?? 14400),
       render: (w: WarehouseConfig) => (
-        <span className="text-xs font-mono font-bold text-[#172B4D]">
-          {(w.totalLocations ?? 14400).toLocaleString()} locs
+        <span className={`text-xs ${w.configStatus === 'not-configured' ? 'text-gray-400 font-normal' : 'font-mono font-bold text-[#172B4D]'}`}>
+          {w.configStatus === 'not-configured' ? '—' : `${(w.totalLocations ?? 14400).toLocaleString()} locs`}
         </span>
       ),
     },
     {
       label: 'Storage Capacity',
-      getter: (w: WarehouseConfig) => w.totalCapacity ?? '24,000 bins',
+      getter: (w: WarehouseConfig) => w.configStatus === 'not-configured' ? '—' : (w.totalCapacity ?? '24,000 bins'),
       render: (w: WarehouseConfig) => (
-        <span className="text-xs text-gray-700 font-medium">
-          {w.totalCapacity ?? '24,000 bins'}
+        <span className={`text-xs ${w.configStatus === 'not-configured' ? 'text-gray-400 font-normal' : 'text-gray-700 font-medium'}`}>
+          {w.configStatus === 'not-configured' ? '—' : (w.totalCapacity ?? '24,000 bins')}
         </span>
       ),
     },
     {
       label: 'Current Utilization',
-      getter: (w: WarehouseConfig) => w.utilizationPct ?? 62,
+      getter: (w: WarehouseConfig) => w.configStatus === 'not-configured' ? '—' : (w.utilizationPct ?? 62),
       render: (w: WarehouseConfig) => {
+        if (w.configStatus === 'not-configured') {
+          return <span className="text-xs text-gray-400 font-normal">—</span>;
+        }
         const pct = w.utilizationPct ?? 62;
         return (
           <div className="space-y-1 w-full max-w-[140px]">

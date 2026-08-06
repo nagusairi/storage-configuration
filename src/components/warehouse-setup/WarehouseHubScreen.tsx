@@ -356,19 +356,25 @@ export function WarehouseHubScreen({
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500 font-medium">Hierarchy Model:</span>
                       <span className="font-bold text-[#172B4D] truncate ml-2">
-                        {w.activeHierarchyModel?.name ?? 'Standard Blueprint'}
+                        {w.configStatus === 'not-configured' ? (
+                          <span className="text-gray-400 font-medium italic">Not Configured</span>
+                        ) : (
+                          w.activeHierarchyModel?.name ?? 'Standard Blueprint'
+                        )}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500 font-medium">Zones Configured:</span>
-                      <span className="font-bold text-[#172B4D]">{w.zones.length} Zones</span>
+                      <span className="font-bold text-[#172B4D]">
+                        {w.configStatus === 'not-configured' ? '—' : `${w.zones.length} Zones`}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500 font-medium">Storage Locations:</span>
                       <span className="font-mono font-bold text-[#172B4D]">
-                        {(w.totalLocations ?? 14400).toLocaleString()}
+                        {w.configStatus === 'not-configured' ? '—' : (w.totalLocations ?? 14400).toLocaleString()}
                       </span>
                     </div>
 
@@ -376,14 +382,18 @@ export function WarehouseHubScreen({
                     <div className="pt-1">
                       <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 mb-1">
                         <span>Utilization</span>
-                        <span>{w.utilizationPct ?? 62}%</span>
+                        <span>{w.configStatus === 'not-configured' ? '—' : `${w.utilizationPct ?? 62}%`}</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className="bg-[#5C1F3D] h-full rounded-full"
-                          style={{ width: `${w.utilizationPct ?? 62}%` }}
-                        />
-                      </div>
+                      {w.configStatus === 'not-configured' ? (
+                        <div className="w-full bg-gray-100 rounded-full h-1.5 border border-dashed border-gray-200" />
+                      ) : (
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-[#5C1F3D] h-full rounded-full"
+                            style={{ width: `${w.utilizationPct ?? 62}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -502,16 +512,30 @@ export function WarehouseHubScreen({
                           {statusLabel}
                         </span>
                       </td>
-                      <td className="p-3.5 text-gray-700">{w.activeHierarchyModel?.name ?? 'Standard Blueprint'}</td>
-                      <td className="p-3.5 font-bold">{w.zones.length}</td>
-                      <td className="p-3.5 font-mono">{(w.totalLocations ?? 14400).toLocaleString()}</td>
+                      <td className="p-3.5 text-gray-700">
+                        {w.configStatus === 'not-configured' ? (
+                          <span className="text-gray-400 font-medium italic text-xs">Not Configured</span>
+                        ) : (
+                          w.activeHierarchyModel?.name ?? 'Standard Blueprint'
+                        )}
+                      </td>
+                      <td className="p-3.5 font-bold">
+                        {w.configStatus === 'not-configured' ? <span className="text-gray-400 font-normal">—</span> : w.zones.length}
+                      </td>
+                      <td className="p-3.5 font-mono">
+                        {w.configStatus === 'not-configured' ? <span className="text-gray-400 font-normal">—</span> : (w.totalLocations ?? 14400).toLocaleString()}
+                      </td>
                       <td className="p-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                            <div className="bg-[#5C1F3D] h-full rounded-full" style={{ width: `${w.utilizationPct ?? 62}%` }} />
+                        {w.configStatus === 'not-configured' ? (
+                          <span className="text-gray-400 font-normal text-xs">—</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                              <div className="bg-[#5C1F3D] h-full rounded-full" style={{ width: `${w.utilizationPct ?? 62}%` }} />
+                            </div>
+                            <span className="text-[11px] font-bold">{w.utilizationPct ?? 62}%</span>
                           </div>
-                          <span className="text-[11px] font-bold">{w.utilizationPct ?? 62}%</span>
-                        </div>
+                        )}
                       </td>
                       <td className="p-3.5 text-right">
                         <button
