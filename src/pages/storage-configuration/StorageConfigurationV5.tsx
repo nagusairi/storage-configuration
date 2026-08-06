@@ -12,6 +12,7 @@ import { WarehouseHubScreen } from '../../components/warehouse-setup/WarehouseHu
 import { WarehouseCompareModal } from '../../components/warehouse-setup/modals/WarehouseCompareModal';
 import { ZoneManagerWizard } from '../../components/warehouse-setup/ZoneManagerWizard';
 import { ActivityTab } from '../../components/warehouse-setup/ActivityTab';
+import { ValidationTab } from '../../components/warehouse-setup/ValidationTab';
 
 function getZoneActionLabel(status?: ConfigStatus, isCompact = false): string {
   if (status === 'draft') return 'Resume Setup';
@@ -856,6 +857,14 @@ export default function StorageConfigurationV5() {
               ))}
             </div>
           </div>
+        );
+
+      case 'validation':
+        return (
+          <ValidationTab
+            config={config}
+            onNavigateTab={(tab) => setActiveTab(tab as EntryTab)}
+          />
         );
 
       case 'activity':
