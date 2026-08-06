@@ -5,6 +5,7 @@ import { Step2HierarchyDesigner } from './steps/Step2HierarchyDesigner';
 import { Step3LevelProperties } from './steps/Step3LevelProperties';
 import { Step4ZoneLayouts } from './steps/Step4ZoneLayouts';
 import { Step5GenerateLayout } from './steps/Step5GenerateLayout';
+import { StorageLayoutBuilderStep } from './steps/StorageLayoutBuilderStep';
 import { Step6NamingRules } from './steps/Step6NamingRules';
 import { Step7Validation } from './steps/Step7Validation';
 import { Step8ReviewPublish } from './steps/Step8ReviewPublish';
@@ -95,7 +96,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
         switch (state.currentStep) {
           case 1: return <Step2HierarchyDesigner state={state} onChange={onChange} onFinishEdit={() => goNext()} />;
           case 2: return <Step3LevelProperties state={state} onChange={onChange} />;
-          case 3: return <Step5GenerateLayout state={state} onChange={onChange} />;
+          case 3: return <StorageLayoutBuilderStep state={state} onChange={onChange} />;
           case 4: return <Step6NamingRules state={state} onChange={onChange} />;
           case 5: return <Step7Validation state={state} onChange={onChange} onGoToStep={goToStep} />;
           case 6: return <StepImpactAssessment state={state} onChange={onChange} />;
@@ -108,7 +109,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       switch (state.currentStep) {
         case 1: return <Step2HierarchyDesigner state={state} onChange={onChange} onFinishEdit={() => goNext()} />;
         case 2: return <Step3LevelProperties state={state} onChange={onChange} />;
-        case 3: return <Step5GenerateLayout state={state} onChange={onChange} />;
+        case 3: return <StorageLayoutBuilderStep state={state} onChange={onChange} />;
         case 4: return <Step6NamingRules state={state} onChange={onChange} />;
         case 5: return <Step7Validation state={state} onChange={onChange} onGoToStep={goToStep} />;
         case 6: return <Step8ReviewPublish state={state} onChange={onChange} onClose={onClose} warehouseName={warehouseName} />;
@@ -132,7 +133,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       );
       case 2: return <Step3LevelProperties state={state} onChange={onChange} />;
       case 3: return <Step4ZoneLayouts state={state} onChange={onChange} />;
-      case 4: return <Step5GenerateLayout state={state} onChange={onChange} />;
+      case 4: return <StorageLayoutBuilderStep state={state} onChange={onChange} />;
       case 5: return <Step6NamingRules state={state} onChange={onChange} />;
       case 6: return <Step7Validation state={state} onChange={onChange} onGoToStep={goToStep} />;
       case 7: return <Step8ReviewPublish state={state} onChange={onChange} onClose={onClose} warehouseName={warehouseName} />;
