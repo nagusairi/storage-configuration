@@ -55,11 +55,28 @@ export default function StorageConfigurationV5() {
   const [showStandardDeleteModal, setShowStandardDeleteModal] = useState(false);
   const [targetZoneForDelete, setTargetZoneForDelete] = useState<ZoneConfig | null>(null);
 
-  // Add Zone modal state
+  // Add Zone Drawer & Discard Prompt State
   const [showAddZoneModal, setShowAddZoneModal] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
   const [newZoneCode, setNewZoneCode] = useState('');
-  const [newZoneStrategy, setNewZoneStrategy] = useState<'FIFO' | 'FEFO' | 'LIFO'>('FEFO');
+  const [showAddZoneDiscardPrompt, setShowAddZoneDiscardPrompt] = useState(false);
+
+  const handleCloseAddZoneDrawer = () => {
+    if (newZoneName.trim() || newZoneCode.trim()) {
+      setShowAddZoneDiscardPrompt(true);
+    } else {
+      setShowAddZoneModal(false);
+      setNewZoneName('');
+      setNewZoneCode('');
+    }
+  };
+
+  const handleConfirmDiscardAddZone = () => {
+    setShowAddZoneDiscardPrompt(false);
+    setShowAddZoneModal(false);
+    setNewZoneName('');
+    setNewZoneCode('');
+  };
 
   // Zone Layouts Toolbar state
   const [zoneSearchQuery, setZoneSearchQuery] = useState('');
@@ -525,7 +542,7 @@ export default function StorageConfigurationV5() {
                     className="h-[32px] px-4 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ Add Zone</span>
+                    <span>Add Zone</span>
                   </button>
 
                   <button
@@ -979,93 +996,131 @@ export default function StorageConfigurationV5() {
           </div>
         )}
 
-        {/* Add Zone Modal */}
+        {/* ── Right Slide-Over Panel (Add Zone Drawer) ────────────────────────── */}
         {showAddZoneModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl border border-[#d1def0] max-w-md w-full p-6 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <h3 className="text-base font-bold text-[#172B4D]">Add New Zone</h3>
-                <button onClick={() => setShowAddZoneModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-                  ✕
-                </button>
-              </div>
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            {/* Backdrop Overlay */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+              onClick={handleCloseAddZoneDrawer}
+            />
 
-              <form onSubmit={handleAddZoneSubmit} className="space-y-4 text-xs">
-                <div className="bg-green-50/70 border border-green-200 rounded-xl p-3 flex items-center gap-2 text-green-900">
-                  <span className="font-semibold">✓ Zone automatically inherits active Warehouse Hierarchy</span>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Hierarchy Level (Fixed)</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value="Zone"
-                    className="w-full p-2.5 border border-gray-200 bg-gray-100 rounded-lg font-mono font-bold text-gray-600 cursor-not-allowed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Business Label <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Inbound, Cold Storage, Overflow"
-                    value={newZoneName}
-                    onChange={e => setNewZoneName(e.target.value)}
-                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-bold text-[#172B4D]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Zone Code</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. ZG"
-                    value={newZoneCode}
-                    onChange={e => setNewZoneCode(e.target.value.toUpperCase())}
-                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D] font-mono font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">Picking Strategy</label>
-                  <select
-                    value={newZoneStrategy}
-                    onChange={e => setNewZoneStrategy(e.target.value as any)}
-                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C1F3D]"
+            <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+              <div className="w-screen max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
+                
+                {/* Drawer Header */}
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-[#f7f8f9]">
+                  <div>
+                    <h3 className="text-base font-bold text-[#172B4D]">Add New Zone</h3>
+                    <p className="text-xs text-gray-500">Configure operational zone under warehouse hierarchy</p>
+                  </div>
+                  <button
+                    onClick={handleCloseAddZoneDrawer}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 rounded-md transition-colors"
+                    title="Close Drawer"
                   >
-                    <option value="FEFO">FEFO (Expiry First)</option>
-                    <option value="FIFO">FIFO (First In First Out)</option>
-                    <option value="LIFO">LIFO (Last In First Out)</option>
-                  </select>
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
 
-                {/* Displayed Name Preview */}
-                <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-2.5 flex items-center justify-between">
-                  <span className="text-gray-500 font-medium">Displayed Name Preview:</span>
-                  <span className="font-bold text-[#172B4D] font-mono">
-                    Zone – {newZoneName || 'Label'}
-                  </span>
+                {/* Drawer Body (Scrollable Form Content) */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-900 flex items-center gap-2">
+                    <span className="font-semibold text-xs">✓ Zone automatically inherits active Warehouse Hierarchy</span>
+                  </div>
+
+                  <form id="pub-add-zone-form" onSubmit={handleAddZoneSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Hierarchy Level (Fixed)
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value="Zone"
+                        className="w-full p-2.5 text-xs border border-gray-200 bg-gray-100 rounded-[3px] font-mono font-bold text-gray-600 cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Business Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Inbound, Cold Storage, High Value Storage"
+                        value={newZoneName}
+                        onChange={e => setNewZoneName(e.target.value)}
+                        className="w-full p-2.5 text-xs border border-gray-300 rounded-[3px] focus:outline-none focus:border-[#5C1F3D] focus:ring-1 focus:ring-[#5C1F3D]/20 font-bold text-[#172B4D]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Zone Code <span className="text-gray-400 font-normal">(Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ZG"
+                        value={newZoneCode}
+                        onChange={e => setNewZoneCode(e.target.value.toUpperCase())}
+                        className="w-full p-2.5 text-xs border border-gray-300 rounded-[3px] focus:outline-none focus:border-[#5C1F3D] focus:ring-1 focus:ring-[#5C1F3D]/20 font-mono uppercase font-bold"
+                      />
+                    </div>
+
+                    {/* Displayed Name Preview */}
+                    <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+                      <span className="text-gray-500 font-medium text-xs">Displayed Name Preview:</span>
+                      <span className="font-bold text-[#172B4D] font-mono text-xs">
+                        Zone – {newZoneName || 'Label'}
+                      </span>
+                    </div>
+                  </form>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                {/* Drawer Footer (Fixed Action Buttons) */}
+                <div className="px-6 py-4 border-t border-gray-200 bg-[#f7f8f9] flex items-center justify-between gap-3">
                   <button
                     type="button"
-                    onClick={() => setShowAddZoneModal(false)}
-                    className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    onClick={handleCloseAddZoneDrawer}
+                    className="h-[32px] px-4 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-[3px] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
+                    form="pub-add-zone-form"
+                    className="h-[32px] px-5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
                   >
                     Create Zone
                   </button>
                 </div>
-              </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Unsaved Changes Confirmation Modal */}
+        {showAddZoneDiscardPrompt && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl border border-gray-200 max-w-sm w-full p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+              <h4 className="text-sm font-bold text-[#172B4D]">Discard Unsaved Changes?</h4>
+              <p className="text-xs text-gray-600">You have uncommitted changes in the Add Zone form. Discarding will clear these entries.</p>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => setShowAddZoneDiscardPrompt(false)}
+                  className="h-[32px] px-3 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-[3px]"
+                >
+                  Continue Editing
+                </button>
+                <button
+                  onClick={handleConfirmDiscardAddZone}
+                  className="h-[32px] px-3 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-[3px]"
+                >
+                  Discard Changes
+                </button>
+              </div>
             </div>
           </div>
         )}

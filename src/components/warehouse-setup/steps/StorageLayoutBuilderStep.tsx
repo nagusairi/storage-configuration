@@ -350,9 +350,9 @@ export function StorageLayoutBuilderStep({ state, onChange }: StorageLayoutBuild
   };
 
   return (
-    <div className="p-6 flex flex-col h-full space-y-4">
+    <div className="flex flex-col h-full space-y-3">
       {/* ── Live Summary Banner ───────────────────────────────────────────── */}
-      <div className="bg-white border border-[#d1def0] rounded-none px-5 py-3.5 shadow-xs flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
+      <div className="bg-white border border-[#d1def0] rounded-xl px-5 py-3 shadow-xs flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-[#5C1F3D]/10 text-[#5C1F3D] flex items-center justify-center font-bold">
             <Calculator className="w-4 h-4" />
