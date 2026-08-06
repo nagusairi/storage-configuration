@@ -30,7 +30,10 @@ import {
   ArrowDown,
   MoreVertical,
   Sliders,
-  RotateCcw
+  RotateCcw,
+  Filter,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel, HierarchyLevel } from '../types';
 import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry, type HierarchyLifecycleStatus } from '../hierarchyModelsData';
@@ -1477,9 +1480,13 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
   const zones = state.zones;
   const defaultHierarchyModel = state.hierarchyModel;
 
-  const [showAddZoneModal, setShowAddZoneModal] = useState(false);
-  const [newBusinessLabel, setNewBusinessLabel] = useState('');
-  const [newZoneCode, setNewZoneCode] = useState('');
+  // Enterprise Toolbar State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'expanded' | 'card' | 'table'>('expanded');
+  const [showFilterPopover, setShowFilterPopover] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterSource, setFilterSource] = useState<string>('all');
+  const [filterModel, setFilterModel] = useState<string>('all');
 
   const updateZone = (updated: ZoneConfig) => {
     onChange({ ...state, zones: state.zones.map(z => z.id === updated.id ? updated : z) });
@@ -1488,6 +1495,47 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
   const deleteZone = (zoneId: string) => {
     onChange({ ...state, zones: state.zones.filter(z => z.id !== zoneId) });
   };
+
+  // Extract available hierarchy model names for filter dropdown
+  const availableModels = Array.from(
+    new Set(
+      zones.map(z => z.hierarchyMode === 'custom' ? (z.customHierarchyModel?.name || 'Custom Model') : defaultHierarchyModel.name)
+    )
+  );
+
+  // Filtered Zones based on search & filter builder
+  const filteredZones = zones.filter(zone => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const modelName = (zone.hierarchyMode === 'custom' ? zone.customHierarchyModel?.name : defaultHierarchyModel.name) || '';
+      const nameMatch = zone.name.toLowerCase().includes(q);
+      const bizNameMatch = (zone.businessName || '').toLowerCase().includes(q);
+      const codeMatch = zone.code.toLowerCase().includes(q);
+      const modelMatch = modelName.toLowerCase().includes(q);
+      if (!nameMatch && !bizNameMatch && !codeMatch && !modelMatch) {
+        return false;
+      }
+    }
+
+    if (filterStatus !== 'all' && zone.status !== filterStatus) {
+      return false;
+    }
+
+    if (filterSource !== 'all') {
+      const isCustom = zone.hierarchyMode === 'custom';
+      if (filterSource === 'inherited' && isCustom) return false;
+      if (filterSource === 'override' && !isCustom) return false;
+    }
+
+    if (filterModel !== 'all') {
+      const modelName = (zone.hierarchyMode === 'custom' ? zone.customHierarchyModel?.name : defaultHierarchyModel.name) || '';
+      if (modelName !== filterModel) return false;
+    }
+
+    return true;
+  });
+
+  const activeFilterCount = (filterStatus !== 'all' ? 1 : 0) + (filterSource !== 'all' ? 1 : 0) + (filterModel !== 'all' ? 1 : 0);
 
   const handleAddZoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1500,6 +1548,7 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
     const newZone: ZoneConfig = {
       id: generateId(),
       name: `${levelPrefix} — ${newBusinessLabel.trim()}`,
+      businessName: newBusinessLabel.trim(),
       code,
       status: 'active',
       hierarchyMode: 'default',
@@ -1516,34 +1565,336 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Configuration</h3>
-          <p className="text-sm text-gray-500">
-            Configure storage zones. New zones automatically inherit the active Warehouse Hierarchy.
-          </p>
+      {/* ── Enterprise Toolbar (Search + Filter + View Switcher) ──────────── */}
+      <div className="space-y-3 mb-5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Left: Search & Filter */}
+          <div className="flex items-center gap-2 flex-1 max-w-2xl">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by Zone Name, Business Name, Zone Code, or Hierarchy Model..."
+                className="w-full h-[32px] pl-9 pr-3 text-xs border border-gray-300 rounded-[3px] focus:outline-none focus:border-[#5C1F3D] focus:ring-1 focus:ring-[#5C1F3D]/20 transition-colors bg-white"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Popover Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFilterPopover(!showFilterPopover)}
+                className={`h-[32px] px-3 text-xs font-medium border rounded-[3px] transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  activeFilterCount > 0
+                    ? 'bg-[#5C1F3D]/5 border-[#5C1F3D]/40 text-[#5C1F3D]'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span>+ Filter</span>
+                {activeFilterCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-[#5C1F3D] text-white text-[10px] font-bold flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Filter Popover Dropdown */}
+              {showFilterPopover && (
+                <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-30 p-3 space-y-3">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="text-xs font-bold text-[#172B4D]">Filter Zones</span>
+                    <button
+                      onClick={() => {
+                        setFilterStatus('all');
+                        setFilterSource('all');
+                        setFilterModel('all');
+                      }}
+                      className="text-[11px] text-[#5C1F3D] hover:underline font-medium"
+                    >
+                      Reset All
+                    </button>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Status</label>
+                    <select
+                      value={filterStatus}
+                      onChange={e => setFilterStatus(e.target.value)}
+                      className="w-full h-8 text-xs border border-gray-200 rounded px-2 bg-white focus:outline-none focus:border-[#5C1F3D]"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="maintenance">Maintenance</option>
+                    </select>
+                  </div>
+
+                  {/* Hierarchy Source Filter */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Hierarchy Source</label>
+                    <select
+                      value={filterSource}
+                      onChange={e => setFilterSource(e.target.value)}
+                      className="w-full h-8 text-xs border border-gray-200 rounded px-2 bg-white focus:outline-none focus:border-[#5C1F3D]"
+                    >
+                      <option value="all">All Sources</option>
+                      <option value="inherited">Inherited (Warehouse)</option>
+                      <option value="override">Custom (Override)</option>
+                    </select>
+                  </div>
+
+                  {/* Hierarchy Model Filter */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Hierarchy Model</label>
+                    <select
+                      value={filterModel}
+                      onChange={e => setFilterModel(e.target.value)}
+                      className="w-full h-8 text-xs border border-gray-200 rounded px-2 bg-white focus:outline-none focus:border-[#5C1F3D]"
+                    >
+                      <option value="all">All Hierarchy Models</option>
+                      {availableModels.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: View Switcher & Primary Action */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* View Switcher Controls */}
+            <div className="bg-gray-100 p-0.5 rounded-[3px] flex items-center gap-0.5 border border-gray-200">
+              <button
+                onClick={() => setViewMode('expanded')}
+                className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'expanded'
+                    ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Expanded Detailed View"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Expanded</span>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'card'
+                    ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Compact Card View"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Card View</span>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'table'
+                    ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Table View"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Table View</span>
+              </button>
+            </div>
+
+            {/* Primary Action Button */}
+            <button
+              onClick={() => setShowAddZoneModal(true)}
+              className="h-[32px] px-4 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add Zone</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddZoneModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-xs"
-        >
-          <Plus className="w-4 h-4" />
-          + Add Zone
-        </button>
+
+        {/* Removable Active Filter Chips */}
+        {activeFilterCount > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            <span className="text-[11px] text-gray-500 font-medium">Active Filters:</span>
+            {filterStatus !== 'all' && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded-[3px]">
+                Status: {filterStatus}
+                <button onClick={() => setFilterStatus('all')} className="hover:text-red-600"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {filterSource !== 'all' && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded-[3px]">
+                Hierarchy Source: {filterSource === 'inherited' ? 'Inherited' : 'Override'}
+                <button onClick={() => setFilterSource('all')} className="hover:text-red-600"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {filterModel !== 'all' && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded-[3px]">
+                Hierarchy Model: {filterModel}
+                <button onClick={() => setFilterModel('all')} className="hover:text-red-600"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setFilterStatus('all');
+                setFilterSource('all');
+                setFilterModel('all');
+              }}
+              className="text-[11px] text-[#5C1F3D] font-medium hover:underline ml-1"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="space-y-4">
-        {zones.map(zone => (
-          <ZoneCard
-            key={zone.id}
-            zone={zone}
-            defaultHierarchyModel={defaultHierarchyModel}
-            onUpdate={updateZone}
-            onDelete={() => deleteZone(zone.id)}
-            onOpenHierarchyDesigner={() => {}}
-          />
-        ))}
-      </div>
+      {/* ── View Modes Rendering ──────────────────────────────────────────── */}
+      {viewMode === 'expanded' && (
+        <div className="space-y-4">
+          {filteredZones.map(zone => (
+            <ZoneCard
+              key={zone.id}
+              zone={zone}
+              defaultHierarchyModel={defaultHierarchyModel}
+              onUpdate={updateZone}
+              onDelete={() => deleteZone(zone.id)}
+              onOpenHierarchyDesigner={() => {}}
+            />
+          ))}
+          {filteredZones.length === 0 && (
+            <div className="p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500 text-xs">
+              No zones found matching the current search or filters.
+            </div>
+          )}
+        </div>
+      )}
+
+      {viewMode === 'card' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredZones.map(zone => {
+            const isCustom = zone.hierarchyMode === 'custom';
+            const modelName = isCustom ? (zone.customHierarchyModel?.name ?? 'Custom Model') : defaultHierarchyModel.name;
+            const levelsCount = (isCustom ? zone.customHierarchyModel?.levels : defaultHierarchyModel.levels)?.length || 0;
+            return (
+              <div key={zone.id} className="bg-white border border-[#d1def0] rounded-xl p-4 shadow-2xs flex flex-col justify-between space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded-[3px]">
+                      {zone.code}
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#172B4D]">{zone.name}</h4>
+                      {zone.businessName && <p className="text-xs text-gray-500">{zone.businessName}</p>}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[zone.status]}`}>
+                    {zone.status}
+                  </span>
+                </div>
+
+                <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-2.5 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 font-medium">Source:</span>
+                    <span className="font-semibold text-gray-700">{isCustom ? 'Custom Override' : 'Inherited (Warehouse)'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 font-medium">Model:</span>
+                    <span className="font-bold text-[#172B4D] truncate ml-1">{modelName} ({levelsCount} Levels)</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => deleteZone(zone.id)}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded"
+                    title="Delete Zone"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredZones.length === 0 && (
+            <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500 text-xs">
+              No zones found matching the current search or filters.
+            </div>
+          )}
+        </div>
+      )}
+
+      {viewMode === 'table' && (
+        <div className="bg-white border border-[#d1def0] rounded-xl overflow-hidden shadow-2xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-gray-600 border-collapse">
+              <thead>
+                <tr className="bg-[#f7f8f9] border-b border-[#d1def0] text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                  <th className="p-3.5">Zone Code</th>
+                  <th className="p-3.5">Zone Name</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">Hierarchy Source</th>
+                  <th className="p-3.5">Hierarchy Model</th>
+                  <th className="p-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredZones.map(zone => {
+                  const isCustom = zone.hierarchyMode === 'custom';
+                  const modelName = isCustom ? (zone.customHierarchyModel?.name ?? 'Custom Model') : defaultHierarchyModel.name;
+                  return (
+                    <tr key={zone.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="p-3.5 font-mono font-bold text-[#5C1F3D]">{zone.code}</td>
+                      <td className="p-3.5 font-bold text-[#172B4D]">{zone.name}</td>
+                      <td className="p-3.5">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[zone.status]}`}>
+                          {zone.status}
+                        </span>
+                      </td>
+                      <td className="p-3.5">
+                        <span className={`text-xs font-semibold ${isCustom ? 'text-amber-700 font-bold' : 'text-gray-600'}`}>
+                          {isCustom ? 'Custom Override' : 'Inherited (Warehouse)'}
+                        </span>
+                      </td>
+                      <td className="p-3.5 font-semibold text-[#172B4D]">{modelName}</td>
+                      <td className="p-3.5 text-right">
+                        <button
+                          onClick={() => deleteZone(zone.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 rounded inline-flex items-center"
+                          title="Delete Zone"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredZones.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-gray-500 text-xs">
+                      No zones found matching the current search or filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {showAddZoneModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">

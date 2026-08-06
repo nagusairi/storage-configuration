@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, AlertTriangle, Info, ShieldAlert } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Info, ShieldAlert, Search, Filter, LayoutGrid, List, Sliders, X } from 'lucide-react';
 import { ModulePageTemplate } from '../../components/layouts/ModulePageTemplate';
 import type { WizardState, SetupMethod, EntryTab, WarehouseConfig, WizardStep, ZoneConfig } from '../../components/warehouse-setup/types';
 import { MOCK_WAREHOUSE_CONFIGS, STANDARD_6_LEVEL } from '../../components/warehouse-setup/mockData';
@@ -60,6 +60,14 @@ export default function StorageConfigurationV5() {
   const [newZoneName, setNewZoneName] = useState('');
   const [newZoneCode, setNewZoneCode] = useState('');
   const [newZoneStrategy, setNewZoneStrategy] = useState<'FIFO' | 'FEFO' | 'LIFO'>('FEFO');
+
+  // Zone Layouts Toolbar state
+  const [zoneSearchQuery, setZoneSearchQuery] = useState('');
+  const [zoneViewMode, setZoneViewMode] = useState<'expanded' | 'card' | 'table'>('expanded');
+  const [showZoneFilterPopover, setShowZoneFilterPopover] = useState(false);
+  const [zoneFilterStatus, setZoneFilterStatus] = useState<string>('all');
+  const [zoneFilterSource, setZoneFilterSource] = useState<string>('all');
+  const [zoneFilterModel, setZoneFilterModel] = useState<string>('all');
 
   // Edit Published Zone modal state
   const [showEditPublishedZoneModal, setShowEditPublishedZoneModal] = useState(false);
@@ -325,121 +333,477 @@ export default function StorageConfigurationV5() {
         );
       }
 
-      case 'zone-layouts':
+      case 'zone-layouts': {
+        const availableZoneModels = Array.from(
+          new Set(
+            config.zones.map(z => z.hierarchyMode === 'custom' ? (z.customHierarchyModel?.name || 'Custom Model') : (config.activeHierarchyModel?.name || 'Standard 6-Level'))
+          )
+        );
+
+        const filteredZoneList = config.zones.filter(zone => {
+          if (zoneSearchQuery.trim()) {
+            const q = zoneSearchQuery.toLowerCase().trim();
+            const modelName = (zone.hierarchyMode === 'custom' ? zone.customHierarchyModel?.name : config.activeHierarchyModel?.name) || '';
+            const nameMatch = zone.name.toLowerCase().includes(q);
+            const bizNameMatch = (zone.businessName || '').toLowerCase().includes(q);
+            const codeMatch = zone.code.toLowerCase().includes(q);
+            const modelMatch = modelName.toLowerCase().includes(q);
+            if (!nameMatch && !bizNameMatch && !codeMatch && !modelMatch) return false;
+          }
+
+          if (zoneFilterStatus !== 'all' && zone.status !== zoneFilterStatus) return false;
+
+          if (zoneFilterSource !== 'all') {
+            const isCustom = zone.hierarchyMode === 'custom';
+            if (zoneFilterSource === 'inherited' && isCustom) return false;
+            if (zoneFilterSource === 'override' && !isCustom) return false;
+          }
+
+          if (zoneFilterModel !== 'all') {
+            const modelName = (zone.hierarchyMode === 'custom' ? zone.customHierarchyModel?.name : config.activeHierarchyModel?.name) || '';
+            if (modelName !== zoneFilterModel) return false;
+          }
+
+          return true;
+        });
+
+        const activeZoneFilterCount = (zoneFilterStatus !== 'all' ? 1 : 0) + (zoneFilterSource !== 'all' ? 1 : 0) + (zoneFilterModel !== 'all' ? 1 : 0);
+
         return (
           <div className="p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Layouts</h3>
-                <p className="text-sm text-gray-500">{config.zones.length} zones configured with metadata-driven hierarchies</p>
+            {/* ── Enterprise Toolbar (Search + Filter + View Switcher) ──────────── */}
+            <div className="space-y-3 mb-5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Left: Search & Filter */}
+                <div className="flex items-center gap-2 flex-1 max-w-2xl">
+                  {/* Search Input */}
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={zoneSearchQuery}
+                      onChange={e => setZoneSearchQuery(e.target.value)}
+                      placeholder="Search by Zone Name, Business Name, Zone Code, or Hierarchy Model..."
+                      className="w-full h-[32px] pl-9 pr-3 text-xs border border-gray-300 rounded-[3px] focus:outline-none focus:border-[#5C1F3D] focus:ring-1 focus:ring-[#5C1F3D]/20 transition-colors bg-white"
+                    />
+                    {zoneSearchQuery && (
+                      <button
+                        onClick={() => setZoneSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filter Popover Button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowZoneFilterPopover(!showZoneFilterPopover)}
+                      className={`h-[32px] px-3 text-xs font-medium border rounded-[3px] transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                        activeZoneFilterCount > 0
+                          ? 'bg-[#5C1F3D]/5 border-[#5C1F3D]/40 text-[#5C1F3D]'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Filter className="w-3.5 h-3.5" />
+                      <span>+ Filter</span>
+                      {activeZoneFilterCount > 0 && (
+                        <span className="w-4 h-4 rounded-full bg-[#5C1F3D] text-white text-[10px] font-bold flex items-center justify-center">
+                          {activeZoneFilterCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Filter Popover Dropdown */}
+                    {showZoneFilterPopover && (
+                      <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-30 p-3 space-y-3">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                          <span className="text-xs font-bold text-[#172B4D]">Filter Zones</span>
+                          <button
+                            onClick={() => {
+                              setZoneFilterStatus('all');
+                              setZoneFilterSource('all');
+                              setZoneFilterModel('all');
+                            }}
+                            className="text-[11px] text-[#5C1F3D] hover:underline font-medium"
+                          >
+                            Reset All
+                          </button>
+                        </div>
+
+                        {/* Status Filter */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-1">Status</label>
+                          <select
+                            value={zoneFilterStatus}
+                            onChange={e => setZoneFilterStatus(e.target.value)}
+                            className="w-full h-8 text-xs border border-gray-200 rounded px-2 bg-white focus:outline-none focus:border-[#5C1F3D]"
+                          >
+                            <option value="all">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Maintenance</option>
+                          </select>
+                        </div>
+
+                        {/* Hierarchy Source Filter */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-1">Hierarchy Source</label>
+                          <select
+                            value={zoneFilterSource}
+                            onChange={e => setZoneFilterSource(e.target.value)}
+                            className="w-full h-8 text-xs border border-gray-200 rounded px-2 bg-white focus:outline-none focus:border-[#5C1F3D]"
+                          >
+                            <option value="all">All Sources</option>
+                            <option value="inherited">Inherited (Warehouse)</option>
+                            <option value="override">Custom (Override)</option>
+                          </select>
+                        </div>
+
+                        {/* Hierarchy Model Filter */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-1">Hierarchy Model</label>
+                          <select
+                            value={zoneFilterModel}
+                            onChange={e => setZoneFilterModel(e.target.value)}
+                            className="w-full h-8 text-xs border border-gray-200 rounded px-2 bg-white focus:outline-none focus:border-[#5C1F3D]"
+                          >
+                            <option value="all">All Hierarchy Models</option>
+                            {availableZoneModels.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: View Switcher & Actions */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* View Switcher Controls */}
+                  <div className="bg-gray-100 p-0.5 rounded-[3px] flex items-center gap-0.5 border border-gray-200">
+                    <button
+                      onClick={() => setZoneViewMode('expanded')}
+                      className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                        zoneViewMode === 'expanded'
+                          ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      title="Expanded Detailed View"
+                    >
+                      <Sliders className="w-3.5 h-3.5" />
+                      <span>Expanded</span>
+                    </button>
+                    <button
+                      onClick={() => setZoneViewMode('card')}
+                      className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                        zoneViewMode === 'card'
+                          ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      title="Compact Card View"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span>Card View</span>
+                    </button>
+                    <button
+                      onClick={() => setZoneViewMode('table')}
+                      className={`h-[26px] px-2.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 ${
+                        zoneViewMode === 'table'
+                          ? 'bg-white text-[#5C1F3D] font-semibold shadow-2xs'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      title="Table View"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                      <span>Table View</span>
+                    </button>
+                  </div>
+
+                  {/* Primary Action Button */}
+                  <button
+                    onClick={() => setShowAddZoneModal(true)}
+                    className="h-[32px] px-4 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Zone</span>
+                  </button>
+
+                  <button
+                    onClick={() => openWizard(undefined, 3)}
+                    className="h-[32px] px-3.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-[3px] transition-colors whitespace-nowrap"
+                  >
+                    Manage Zones
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowAddZoneModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Zone
-                </button>
-                <button onClick={() => openWizard(undefined, 3)} className="px-3.5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
-                  Manage Zones
-                </button>
-              </div>
+
+              {/* Removable Active Filter Chips */}
+              {activeZoneFilterCount > 0 && (
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-[11px] text-gray-500 font-medium">Active Filters:</span>
+                  {zoneFilterStatus !== 'all' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded-[3px]">
+                      Status: {zoneFilterStatus}
+                      <button onClick={() => setZoneFilterStatus('all')} className="hover:text-red-600"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {zoneFilterSource !== 'all' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded-[3px]">
+                      Hierarchy Source: {zoneFilterSource === 'inherited' ? 'Inherited' : 'Override'}
+                      <button onClick={() => setZoneFilterSource('all')} className="hover:text-red-600"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {zoneFilterModel !== 'all' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300 px-2 py-0.5 rounded-[3px]">
+                      Hierarchy Model: {zoneFilterModel}
+                      <button onClick={() => setZoneFilterModel('all')} className="hover:text-red-600"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setZoneFilterStatus('all');
+                      setZoneFilterSource('all');
+                      setZoneFilterModel('all');
+                    }}
+                    className="text-[11px] text-[#5C1F3D] font-medium hover:underline ml-1"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col gap-4">
-              {config.zones.map(zone => {
-                const isCustom = zone.hierarchyMode === 'custom';
-                const activeModel = isCustom ? zone.customHierarchyModel : config.activeHierarchyModel;
-                const levelsList = activeModel?.levels ?? [];
-                const isActive = zone.status === 'active';
+            {/* ── View Modes Rendering ──────────────────────────────────────────── */}
+            {zoneViewMode === 'expanded' && (
+              <div className="flex flex-col gap-4">
+                {filteredZoneList.map(zone => {
+                  const isCustom = zone.hierarchyMode === 'custom';
+                  const activeModel = isCustom ? zone.customHierarchyModel : config.activeHierarchyModel;
+                  const levelsList = activeModel?.levels ?? [];
+                  const isActive = zone.status === 'active';
 
-                return (
-                  <div key={zone.id} className={`bg-white border rounded-xl p-5 shadow-sm transition-all ${
-                    isActive ? 'border-[#d1def0]' : 'border-gray-200 bg-gray-50/50 opacity-80'
-                  }`}>
-                    <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono font-bold bg-[#5C1F3D] text-white px-2.5 py-1 rounded-lg">
-                          {zone.code}
-                        </span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-bold text-[#172B4D]">{zone.name}</h4>
-                            {isCustom ? (
-                              <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                Custom Hierarchy Override
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-semibold bg-green-50 text-green-800 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                Inherited from Warehouse Hierarchy
-                              </span>
-                            )}
+                  return (
+                    <div key={zone.id} className={`bg-white border rounded-xl p-5 shadow-sm transition-all ${
+                      isActive ? 'border-[#d1def0]' : 'border-gray-200 bg-gray-50/50 opacity-80'
+                    }`}>
+                      <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono font-bold bg-[#5C1F3D] text-white px-2.5 py-1 rounded-lg">
+                            {zone.code}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-[#172B4D]">{zone.name}</h4>
+                              {isCustom ? (
+                                <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                  Custom Hierarchy Override
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold bg-green-50 text-green-800 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                  Inherited from Warehouse Hierarchy
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Picking Strategy: <span className="font-semibold text-gray-700">{zone.pickingStrategy}</span>
-                            {zone.dimensions && ` · Dimensions: ${zone.dimensions.width}m × ${zone.dimensions.depth}m`}
-                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleZoneStatus(zone.id)}
+                            className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize transition-colors flex items-center gap-1 ${
+                              isActive
+                                ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-amber-50 hover:text-amber-700'
+                                : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-700'
+                            }`}
+                            title={isActive ? 'Click to deactivate zone' : 'Click to activate zone'}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            {zone.status}
+                          </button>
+
+                          <button
+                            onClick={() => handleConfigureZoneClick(zone)}
+                            className="h-[32px] px-3.5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
+                          >
+                            Configure Zone
+                          </button>
+
+                          <button
+                            onClick={() => handleInitiateDeleteZone(zone)}
+                            title="Delete Zone"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleZoneStatus(zone.id)}
-                          className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize transition-colors flex items-center gap-1 ${
-                            isActive
-                              ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-amber-50 hover:text-amber-700'
-                              : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-700'
-                          }`}
-                          title={isActive ? 'Click to deactivate zone' : 'Click to activate zone'}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                          {zone.status}
-                        </button>
+                      <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-3">
+                        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                          Active Chain Structure ({levelsList.length} Levels)
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-semibold text-[#172B4D] bg-white border border-gray-200 px-2.5 py-1 rounded">
+                            Warehouse ({config.warehouseName})
+                          </span>
+                          {levelsList.map(lvl => (
+                            <span key={lvl.id} className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                              <span className="text-gray-300">→</span>
+                              <span className="bg-white border border-gray-200 px-2 py-1 rounded">
+                                {lvl.name} <span className="font-mono text-[10px] text-gray-400">({lvl.codePrefix})</span>
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredZoneList.length === 0 && (
+                  <div className="p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500 text-xs">
+                    No zones found matching the current search or filters.
+                  </div>
+                )}
+              </div>
+            )}
 
+            {zoneViewMode === 'card' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredZoneList.map(zone => {
+                  const isCustom = zone.hierarchyMode === 'custom';
+                  const activeModel = isCustom ? zone.customHierarchyModel : config.activeHierarchyModel;
+                  const modelName = activeModel?.name ?? 'Standard 6-Level';
+                  const levelsCount = activeModel?.levels?.length || 0;
+                  return (
+                    <div key={zone.id} className="bg-white border border-[#d1def0] rounded-xl p-4 shadow-2xs flex flex-col justify-between space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded-[3px]">
+                            {zone.code}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-bold text-[#172B4D]">{zone.name}</h4>
+                            {zone.businessName && <p className="text-xs text-gray-500">{zone.businessName}</p>}
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${
+                          zone.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+                        }`}>
+                          {zone.status}
+                        </span>
+                      </div>
+
+                      <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-2.5 text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-medium">Source:</span>
+                          <span className="font-semibold text-gray-700">{isCustom ? 'Custom Override' : 'Inherited (Warehouse)'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-medium">Model:</span>
+                          <span className="font-bold text-[#172B4D] truncate ml-1">{modelName} ({levelsCount} Levels)</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <button
                           onClick={() => handleConfigureZoneClick(zone)}
-                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-2xs"
+                          className="h-[32px] px-3 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
                         >
                           Configure Zone
                         </button>
-
                         <button
                           onClick={() => handleInitiateDeleteZone(zone)}
+                          className="p-1 text-gray-400 hover:text-red-600 rounded"
                           title="Delete Zone"
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
-
-                    <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg p-3">
-                      <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                        Active Chain Structure ({levelsList.length} Levels)
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-semibold text-[#172B4D] bg-white border border-gray-200 px-2.5 py-1 rounded">
-                          Warehouse ({config.warehouseName})
-                        </span>
-                        {levelsList.map(lvl => (
-                          <span key={lvl.id} className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                            <span className="text-gray-300">→</span>
-                            <span className="bg-white border border-gray-200 px-2 py-1 rounded">
-                              {lvl.name} <span className="font-mono text-[10px] text-gray-400">({lvl.codePrefix})</span>
-                            </span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                  );
+                })}
+                {filteredZoneList.length === 0 && (
+                  <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500 text-xs">
+                    No zones found matching the current search or filters.
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            )}
+
+            {zoneViewMode === 'table' && (
+              <div className="bg-white border border-[#d1def0] rounded-xl overflow-hidden shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-gray-600 border-collapse">
+                    <thead>
+                      <tr className="bg-[#f7f8f9] border-b border-[#d1def0] text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        <th className="p-3.5">Zone Code</th>
+                        <th className="p-3.5">Zone Name</th>
+                        <th className="p-3.5">Status</th>
+                        <th className="p-3.5">Hierarchy Source</th>
+                        <th className="p-3.5">Hierarchy Model</th>
+                        <th className="p-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredZoneList.map(zone => {
+                        const isCustom = zone.hierarchyMode === 'custom';
+                        const activeModel = isCustom ? zone.customHierarchyModel : config.activeHierarchyModel;
+                        const modelName = activeModel?.name ?? 'Standard 6-Level';
+                        return (
+                          <tr key={zone.id} className="hover:bg-gray-50/80 transition-colors">
+                            <td className="p-3.5 font-mono font-bold text-[#5C1F3D]">{zone.code}</td>
+                            <td className="p-3.5 font-bold text-[#172B4D]">{zone.name}</td>
+                            <td className="p-3.5">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${
+                                zone.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+                              }`}>
+                                {zone.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`text-xs font-semibold ${isCustom ? 'text-amber-700 font-bold' : 'text-gray-600'}`}>
+                                {isCustom ? 'Custom Override' : 'Inherited (Warehouse)'}
+                              </span>
+                            </td>
+                            <td className="p-3.5 font-semibold text-[#172B4D]">{modelName}</td>
+                            <td className="p-3.5 text-right flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleConfigureZoneClick(zone)}
+                                className="h-[32px] px-3 text-xs font-medium text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/40 rounded-[3px] transition-colors"
+                              >
+                                Configure
+                              </button>
+                              <button
+                                onClick={() => handleInitiateDeleteZone(zone)}
+                                className="p-1 text-gray-400 hover:text-red-600 rounded inline-flex items-center"
+                                title="Delete Zone"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredZoneList.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="p-8 text-center text-gray-500 text-xs">
+                            No zones found matching the current search or filters.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         );
+      }
 
       case 'naming-rules':
         return (
