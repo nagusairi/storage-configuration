@@ -55,6 +55,7 @@ export function Sidebar({ expanded, onToggle, onOpenAssistant, onModuleClick }: 
     { icon: Settings, label: 'Storage Configuration v2', active: false, path: '/storage-configuration-v2' },
     { icon: Settings, label: 'Storage Configuration v3', active: false, path: '/storage-configuration-v3' },
     { icon: Settings, label: 'Storage Configuration v4', active: false, path: '/storage-configuration-v4' },
+    { icon: Settings, label: 'Storage Configuration v5', active: false, path: '/storage-configuration-v5' },
     { icon: Users, label: 'Vendor Management', active: false, path: '/vendors' },
     { icon: ShoppingCart, label: 'Purchases', active: false, path: '/purchases' },
     { icon: TrendingUp, label: 'Sales', active: false, path: '/sales' },
