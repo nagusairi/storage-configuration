@@ -12,36 +12,36 @@ export function OverviewTab({ config, onSetupClick }: OverviewTabProps) {
   return (
     <div className="p-6">
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-[#f7f8f9] rounded-xl p-4 border border-[#d1def0]">
-          <div className="flex items-center gap-2 mb-2">
-            <GitBranch className="w-4 h-4 text-teal-600" />
-            <h4 className="text-xs font-semibold text-gray-600">Active Hierarchy</h4>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-[#f7f8f9] rounded-lg p-2.5 px-3 border border-[#d1def0]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <GitBranch className="w-3.5 h-3.5 text-teal-600" />
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Active Hierarchy</h4>
           </div>
-          <p className="text-sm font-bold text-[#172B4D]">{kpis.activeHierarchyName}</p>
+          <p className="text-xs font-bold text-[#172B4D] truncate">{kpis.activeHierarchyName}</p>
           {activeHierarchyModel && (
-            <p className="text-xs text-gray-500 mt-1">{activeHierarchyModel.levels.length} levels · {activeHierarchyModel.levels.map(l => l.name).join(' → ')}</p>
+            <p className="text-[10px] text-gray-500 mt-0.5 truncate">{activeHierarchyModel.levels.length} levels · {activeHierarchyModel.levels.map(l => l.name).join(' → ')}</p>
           )}
         </div>
-        <div className="bg-[#f7f8f9] rounded-xl p-4 border border-[#d1def0]">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-orange-600" />
-            <h4 className="text-xs font-semibold text-gray-600">Utilization</h4>
+        <div className="bg-[#f7f8f9] rounded-lg p-2.5 px-3 border border-[#d1def0]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingUp className="w-3.5 h-3.5 text-orange-600" />
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Utilization</h4>
           </div>
-          <p className="text-2xl font-bold text-[#172B4D]">{configStatus === 'not-configured' ? '—' : `${kpis.utilization}%`}</p>
+          <p className="text-sm font-bold text-[#172B4D]">{configStatus === 'not-configured' ? '—' : `${kpis.utilization}%`}</p>
           {configStatus !== 'not-configured' && (
-            <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div className="mt-1 h-1 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full" style={{ width: `${kpis.utilization}%` }} />
             </div>
           )}
         </div>
-        <div className="bg-[#f7f8f9] rounded-xl p-4 border border-[#d1def0]">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-4 h-4 text-rose-600" />
-            <h4 className="text-xs font-semibold text-gray-600">Last Published</h4>
+        <div className="bg-[#f7f8f9] rounded-lg p-2.5 px-3 border border-[#d1def0]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Calendar className="w-3.5 h-3.5 text-rose-600" />
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Last Published</h4>
           </div>
-          <p className="text-sm font-bold text-[#172B4D]">{kpis.lastPublished}</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs font-bold text-[#172B4D]">{kpis.lastPublished}</p>
+          <p className="text-[10px] text-gray-500 mt-0.5 truncate">
             {configStatus === 'published' ? 'Configuration is live' : configStatus === 'draft' ? 'Changes not yet published' : 'Not configured'}
           </p>
         </div>
