@@ -146,32 +146,33 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       <div className="sticky top-0 z-30 bg-white border-b border-[#d1def0] shadow-2xs flex-shrink-0">
         {/* Compact Single-Row Header */}
         <div className="px-6 py-2.5 flex items-center justify-between flex-wrap gap-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 transition-colors text-[#172B4D] hover:text-black font-semibold flex items-center justify-center shadow-2xs"
-              title="Close wizard"
-            >
-              <X className="w-4 h-4 text-[#172B4D]" />
-            </button>
+          <div className="flex items-center gap-4 flex-wrap">
             <h2 className="text-sm font-bold text-[#172B4D]">
               {isZoneMode ? 'Configure Zone' : 'Configure Warehouse'}
             </h2>
+
+            {/* Compact Metadata Row (Inline) */}
+            <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f7f8f9] border border-gray-200 px-3 py-1 rounded-lg font-medium">
+              <span><strong className="text-gray-500 font-semibold">Warehouse:</strong> {warehouseName}</span>
+              <span className="text-gray-300">|</span>
+              <span><strong className="text-gray-500 font-semibold">Zone:</strong> {zoneName}</span>
+              <span className="text-gray-300">|</span>
+              <span><strong className="text-gray-500 font-semibold">Hierarchy:</strong> {hierarchyMode}</span>
+              <span className="text-gray-300">|</span>
+              <span className="inline-flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                Draft
+              </span>
+            </div>
           </div>
 
-          {/* Compact Metadata Row (Inline) */}
-          <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f7f8f9] border border-gray-200 px-3 py-1 rounded-lg font-medium">
-            <span><strong className="text-gray-500 font-semibold">Warehouse:</strong> {warehouseName}</span>
-            <span className="text-gray-300">|</span>
-            <span><strong className="text-gray-500 font-semibold">Zone:</strong> {zoneName}</span>
-            <span className="text-gray-300">|</span>
-            <span><strong className="text-gray-500 font-semibold">Hierarchy:</strong> {hierarchyMode}</span>
-            <span className="text-gray-300">|</span>
-            <span className="inline-flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              Draft
-            </span>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 transition-colors text-[#172B4D] hover:text-black font-semibold flex items-center justify-center shadow-2xs"
+            title="Close wizard"
+          >
+            <X className="w-4 h-4 text-[#172B4D]" />
+          </button>
         </div>
 
         {/* Stepper Bar */}
