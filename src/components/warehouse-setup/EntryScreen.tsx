@@ -240,14 +240,6 @@ export function EntryScreen({
               onViewAllWarehouses={onViewAllWarehouses}
             />
           </div>
-          {/* New Warehouse — matched to dropdown height (33px) */}
-          <button
-            onClick={onNewWarehouseClick}
-            className="h-[33px] flex items-center gap-1.5 px-3.5 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Warehouse
-          </button>
         </div>
 
         {/* Right: Status Badges + Configure */}

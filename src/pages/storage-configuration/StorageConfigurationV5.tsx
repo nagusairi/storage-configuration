@@ -486,7 +486,7 @@ export default function StorageConfigurationV5() {
       breadcrumbActions={
         <button
           onClick={() => setShowWarehouseSetup(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-2xs"
+          className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-xs"
         >
           <Plus className="w-4 h-4" />
           + New Warehouse
