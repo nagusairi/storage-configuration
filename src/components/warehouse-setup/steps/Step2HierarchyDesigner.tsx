@@ -111,6 +111,9 @@ export function Step2HierarchyDesigner({ state, onChange, onFinishEdit }: Step2H
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Initial levels state for review changes modal diffs
+  const [initialLevels] = useState<HierarchyLevel[]>([...levels]);
+
   // Context menu popover state for node cards
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
