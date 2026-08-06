@@ -230,7 +230,14 @@ export default function StorageConfigurationV5() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab config={config} onSetupClick={() => openWizard(undefined, 1)} />;
+        return (
+          <OverviewTab
+            config={config}
+            onSetupClick={() => openWizard(undefined, 1)}
+            onNavigateTab={(tab) => setActiveTab(tab as EntryTab)}
+            onOpenZoneManager={() => setShowZoneManagerWizard(true)}
+          />
+        );
 
       case 'hierarchy-model': {
         const inheritedZones = config.zones.filter(z => z.hierarchyMode !== 'custom');
