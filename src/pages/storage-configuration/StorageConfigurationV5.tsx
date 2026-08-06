@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, AlertTriangle, Info, ShieldAlert, Search, Filter, LayoutGrid, List, Sliders, X } from 'lucide-react';
 import { ModulePageTemplate } from '../../components/layouts/ModulePageTemplate';
-import type { WizardState, SetupMethod, EntryTab, WarehouseConfig, WizardStep, ZoneConfig } from '../../components/warehouse-setup/types';
+import type { WizardState, SetupMethod, EntryTab, WarehouseConfig, WizardStep, ZoneConfig, ConfigStatus } from '../../components/warehouse-setup/types';
 import { MOCK_WAREHOUSE_CONFIGS, STANDARD_6_LEVEL } from '../../components/warehouse-setup/mockData';
 import { EntryScreen } from '../../components/warehouse-setup/EntryScreen';
 import { SetupWizard } from '../../components/warehouse-setup/SetupWizard';
@@ -10,6 +10,12 @@ import { OverviewTab } from '../../components/warehouse-setup/OverviewTab';
 import { PublishedProtectionModal } from '../../components/warehouse-setup/modals/PublishedProtectionModal';
 import { WarehouseHubScreen } from '../../components/warehouse-setup/WarehouseHubScreen';
 import { WarehouseCompareModal } from '../../components/warehouse-setup/modals/WarehouseCompareModal';
+
+function getZoneActionLabel(status?: ConfigStatus, isCompact = false): string {
+  if (status === 'draft') return 'Resume Setup';
+  if (status === 'published') return 'Edit Configuration';
+  return isCompact ? 'Configure' : 'Configure Zone';
+}
 
 function makeInitialWizardState(
   config: WarehouseConfig,
@@ -644,7 +650,7 @@ export default function StorageConfigurationV5() {
                             onClick={() => handleConfigureZoneClick(zone)}
                             className="h-[32px] px-3.5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
                           >
-                            Configure Zone
+                            {getZoneActionLabel(zone.configStatus)}
                           </button>
 
                           <button
@@ -728,7 +734,7 @@ export default function StorageConfigurationV5() {
                           onClick={() => handleConfigureZoneClick(zone)}
                           className="h-[32px] px-3 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
                         >
-                          Configure Zone
+                          {getZoneActionLabel(zone.configStatus)}
                         </button>
                         <button
                           onClick={() => handleInitiateDeleteZone(zone)}
@@ -790,7 +796,7 @@ export default function StorageConfigurationV5() {
                                 onClick={() => handleConfigureZoneClick(zone)}
                                 className="h-[32px] px-3 text-xs font-medium text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/40 rounded-[3px] transition-colors"
                               >
-                                Configure
+                                {getZoneActionLabel(zone.configStatus, true)}
                               </button>
                               <button
                                 onClick={() => handleInitiateDeleteZone(zone)}

@@ -44,7 +44,9 @@ export interface ZoneConfig {
   id: string;
   name: string;
   code: string;
+  businessName?: string;
   status: 'active' | 'inactive' | 'maintenance';
+  configStatus?: ConfigStatus;
   hierarchyMode: 'default' | 'custom';
   hierarchySource?: 'warehouse' | 'model';
   hierarchyModelSourceName?: string;

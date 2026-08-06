@@ -62,6 +62,12 @@ function generateId() {
   return `zone-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
 }
 
+function getZoneActionLabel(status?: ConfigStatus, isCompact = false): string {
+  if (status === 'draft') return 'Resume Setup';
+  if (status === 'published') return 'Edit Configuration';
+  return isCompact ? 'Configure' : 'Configure Zone';
+}
+
 function ZoneCard({
   zone,
   defaultHierarchyModel,
@@ -423,7 +429,13 @@ function ZoneCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => onOpenHierarchyDesigner()}
+            className="h-[32px] px-3.5 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
+          >
+            {getZoneActionLabel(zone.configStatus)}
+          </button>
           <button
             onClick={onDelete}
             title="Delete Zone"
@@ -1838,7 +1850,13 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => updateZone(zone)}
+                    className="h-[32px] px-3 text-xs font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs"
+                  >
+                    {getZoneActionLabel(zone.configStatus)}
+                  </button>
                   <button
                     onClick={() => deleteZone(zone.id)}
                     className="p-1 text-gray-400 hover:text-red-600 rounded"
@@ -1891,7 +1909,13 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
                         </span>
                       </td>
                       <td className="p-3.5 font-semibold text-[#172B4D]">{modelName}</td>
-                      <td className="p-3.5 text-right">
+                      <td className="p-3.5 text-right flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => updateZone(zone)}
+                          className="h-[32px] px-3 text-xs font-medium text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/40 rounded-[3px] transition-colors"
+                        >
+                          {getZoneActionLabel(zone.configStatus, true)}
+                        </button>
                         <button
                           onClick={() => deleteZone(zone.id)}
                           className="p-1 text-gray-400 hover:text-red-600 rounded inline-flex items-center"
