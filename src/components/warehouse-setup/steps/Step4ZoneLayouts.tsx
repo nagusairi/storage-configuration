@@ -149,7 +149,7 @@ function ZoneCard({
       return entry.id === 'hm-flowone-cold-storage';
     }
     if (q.includes('vault') || q.includes('high') || q.includes('val')) {
-      return entry.id === 'hm-[#org-high-value]';
+      return entry.id === 'hm-org-high-value';
     }
     if (q.includes('retail') || q.includes('fast')) {
       return entry.id === 'hm-flowone-retail';
@@ -172,7 +172,6 @@ function ZoneCard({
   // ── REORDERING LOGIC & UNDO STACK ──────────────────────────────────────────
   const handleReorderLevels = (newLevels: HierarchyLevel[]) => {
     setPreviousScratchLevels([...scratchLevels]);
-    // Recalculate depth and child pointers
     const reindexed = newLevels.map((lvl, idx) => ({
       ...lvl,
       depth: idx,
@@ -248,7 +247,7 @@ function ZoneCard({
     setActiveContextMenuLevelId(null);
   };
 
-  // ── HIERARCHY COMPATIBILITY VALIDATION ENGINE ─────────────────────────────
+  // ── HIERARCHY COMPATIBILITY VALIDATION ENGINE (ONLY ON EXPLICIT APPLY) ─────
   const initiateApplyModel = (entry: HierarchyModelCatalogEntry) => {
     if (entry.lifecycleStatus === 'deprecated' || entry.lifecycleStatus === 'archived') {
       alert(`Model "${entry.name}" is ${entry.lifecycleStatus.toUpperCase()} and cannot be assigned to new zones.`);
@@ -576,7 +575,7 @@ function ZoneCard({
               </div>
             )}
 
-            {/* ── PROGRESSIVELY REVEALED ADVANCED SELECTOR ───────────────────── */}
+            {/* ── PROGRESSIVELY REVEALED ADVANCED SELECTOR (CLEAN SELECTION ONLY) ─ */}
             {showAdvancedHierarchy && (
               <div className="bg-[#fcfdfe] border border-[#d1def0] rounded-xl p-4 space-y-4 pt-4 animate-in fade-in duration-200">
                 <div className="grid grid-cols-2 gap-3">
@@ -607,7 +606,12 @@ function ZoneCard({
                   <button
                     type="button"
                     onClick={() =>
-                      initiateApplyModel(HIERARCHY_MODELS_CATALOG[1])
+                      // CLEAN SOURCE SELECTION: Simply set hierarchySource to 'model' without triggering validation/toasts
+                      onUpdate({
+                        ...zone,
+                        hierarchyMode: 'custom',
+                        hierarchySource: 'model',
+                      })
                     }
                     className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
                       !isInherited ? 'border-[#5C1F3D] bg-purple-50/20 font-bold' : 'border-gray-200 bg-white'
@@ -725,7 +729,6 @@ function ZoneCard({
                       })}
                     </div>
 
-                    {/* ── BOTTOM ADVANCED ACTIONS ──────────────────────────────── */}
                     <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2">
                         <button
@@ -824,7 +827,6 @@ function ZoneCard({
       {showBuildScratchWizard && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl border border-[#d1def0] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
-            {/* Reorder Undo Toast Banner */}
             {showReorderUndoToast && (
               <div className="absolute top-16 left-6 right-6 bg-[#172B4D] text-white px-4 py-2 rounded-xl shadow-xl flex items-center justify-between text-xs z-30 animate-in fade-in duration-150">
                 <span>✓ Hierarchy level reordered successfully.</span>
@@ -837,7 +839,6 @@ function ZoneCard({
               </div>
             )}
 
-            {/* Header with Step Progress Indicator */}
             <div className="px-6 py-4 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="text-base font-bold text-[#172B4D]">Create Hierarchy Model — Build From Scratch</h3>
@@ -853,7 +854,6 @@ function ZoneCard({
               </button>
             </div>
 
-            {/* Stepper Header Bar */}
             <div className="bg-[#f7f8f9] border-b border-gray-200 px-6 py-2.5 flex items-center justify-between text-xs flex-shrink-0">
               {[
                 { num: 1, label: 'Metadata' },
@@ -874,9 +874,7 @@ function ZoneCard({
               ))}
             </div>
 
-            {/* Modal Body per Step */}
             <div className="p-6 overflow-y-auto flex-1 text-xs">
-              {/* STEP 1: HIERARCHY MODEL INFORMATION (METADATA) */}
               {scratchStep === 1 && (
                 <div className="space-y-4">
                   <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-3.5 flex items-center gap-2.5 text-purple-950">
@@ -947,10 +945,8 @@ function ZoneCard({
                 </div>
               )}
 
-              {/* STEP 2: HIERARCHY DESIGNER (REORDERING & CONTEXT MENU) */}
               {scratchStep === 2 && (
                 <div className="space-y-4">
-                  {/* Status Bar */}
                   <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between text-green-900">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -959,7 +955,6 @@ function ZoneCard({
                     <span className="text-[11px] font-semibold text-green-700 font-mono">✓ Draft Saved • Just now</span>
                   </div>
 
-                  {/* Live Chain Preview Banner */}
                   <div className="bg-purple-50/60 border border-purple-200 rounded-xl p-3 flex items-center justify-between text-xs">
                     <span className="font-semibold text-purple-900">Live Hierarchy Preview:</span>
                     <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-[#5C1F3D] flex-wrap">
@@ -972,7 +967,6 @@ function ZoneCard({
                     </div>
                   </div>
 
-                  {/* Interactive Level Manager */}
                   <div className="space-y-2">
                     {scratchLevels.map((lvl, idx) => (
                       <div
@@ -1018,7 +1012,6 @@ function ZoneCard({
                           </div>
                         </div>
 
-                        {/* Controls & Context Menu */}
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-0.5">
                             <button
@@ -1041,7 +1034,6 @@ function ZoneCard({
                             </button>
                           </div>
 
-                          {/* Context Menu Dropdown Trigger */}
                           <div className="relative">
                             <button
                               type="button"
@@ -1051,7 +1043,6 @@ function ZoneCard({
                               <MoreVertical className="w-4 h-4" />
                             </button>
 
-                            {/* Dropdown Menu Popup */}
                             {activeContextMenuLevelId === lvl.id && (
                               <div className="absolute right-0 top-8 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 text-xs">
                                 <button
@@ -1117,7 +1108,6 @@ function ZoneCard({
                 </div>
               )}
 
-              {/* STEP 3: HIERARCHY STRUCTURAL VALIDATION */}
               {scratchStep === 3 && (
                 <div className="space-y-4">
                   <div className="bg-green-50/80 border border-green-200 rounded-xl p-4 space-y-3">
@@ -1136,7 +1126,6 @@ function ZoneCard({
                 </div>
               )}
 
-              {/* STEP 4: PUBLISH & REVIEW SUMMARY */}
               {scratchStep === 4 && (
                 <div className="space-y-4">
                   {!scratchPublishedEntry ? (
@@ -1184,7 +1173,6 @@ function ZoneCard({
               )}
             </div>
 
-            {/* Modal Footer Controls */}
             <div className="px-6 py-3 border-t border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
               <button
                 type="button"
