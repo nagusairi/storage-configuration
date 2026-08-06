@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, MapPin } from 'lucide-react';
+import { Search, ChevronDown, MapPin, ArrowRight } from 'lucide-react';
 
 interface Warehouse {
   id: string;
@@ -22,6 +22,8 @@ interface SearchableWarehouseSelectProps {
   includeAllOption?: boolean;
   /** Optional map of warehouseId → configStatus for inline status badges */
   statusByWarehouseId?: Record<string, ConfigStatus>;
+  /** Optional callback to navigate to Warehouse Configuration Hub */
+  onViewAllWarehouses?: () => void;
 }
 
 export function SearchableWarehouseSelect({ 
@@ -30,6 +32,7 @@ export function SearchableWarehouseSelect({
   onChange,
   includeAllOption = true,
   statusByWarehouseId,
+  onViewAllWarehouses,
 }: SearchableWarehouseSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,7 +95,7 @@ export function SearchableWarehouseSelect({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-[3px] shadow-lg max-h-[300px] overflow-hidden flex flex-col">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-[3px] shadow-lg max-h-[340px] overflow-hidden flex flex-col min-w-[260px]">
           {/* Search Input */}
           <div className="p-2 border-b border-gray-200">
             <div className="relative">
@@ -108,8 +111,13 @@ export function SearchableWarehouseSelect({
             </div>
           </div>
 
+          {/* Section Header */}
+          <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/60 border-b border-gray-100">
+            Recent Warehouses
+          </div>
+
           {/* Options List */}
-          <div className="overflow-y-auto">
+          <div className="overflow-y-auto max-h-[200px]">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-2 text-sm text-gray-500 text-center">
                 No warehouses found
@@ -154,6 +162,23 @@ export function SearchableWarehouseSelect({
               })
             )}
           </div>
+
+          {/* View All Warehouses Footer Button */}
+          {onViewAllWarehouses && (
+            <div className="p-1.5 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onViewAllWarehouses();
+                }}
+                className="w-full px-3 py-2 text-xs font-bold text-[#5C1F3D] hover:bg-[#5C1F3D]/10 rounded-[3px] transition-colors flex items-center justify-between group"
+              >
+                <span>View All Warehouses</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#5C1F3D] group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

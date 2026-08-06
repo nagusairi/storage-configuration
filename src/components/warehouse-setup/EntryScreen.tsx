@@ -30,6 +30,7 @@ interface EntryScreenProps {
   onSetupClick: (method?: SetupMethod, step?: WizardStep) => void;
   onNewWarehouseClick: () => void;
   onTabContent: () => React.ReactNode;
+  onViewAllWarehouses?: () => void;
 }
 
 // ─── Tabs (only shown for Published warehouses) ───────────────────────────────
@@ -217,8 +218,18 @@ export function EntryScreen({
 
       {/* ── Top Control Bar (always visible) ─────────────────────────────── */}
       <div className="bg-white rounded-lg shadow-sm border border-[#d1def0] px-5 py-3 mb-3 flex items-center justify-between gap-4 flex-shrink-0">
-        {/* Left: Warehouse Selector + New Warehouse */}
+        {/* Left: Warehouse Selector + New Warehouse + Hub Link */}
         <div className="flex items-center gap-3 flex-shrink-0">
+          {onViewAllWarehouses && (
+            <button
+              type="button"
+              onClick={onViewAllWarehouses}
+              className="h-[33px] px-3 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-[3px] transition-colors flex items-center gap-1.5"
+              title="Return to Warehouse Configuration Hub"
+            >
+              ← Warehouse Hub
+            </button>
+          )}
           <div className="w-[260px]">
             <SearchableWarehouseSelect
               warehouses={WAREHOUSE_LIST}
@@ -226,6 +237,7 @@ export function EntryScreen({
               onChange={onWarehouseChange}
               includeAllOption={false}
               statusByWarehouseId={STATUS_BY_ID}
+              onViewAllWarehouses={onViewAllWarehouses}
             />
           </div>
           {/* New Warehouse — matched to dropdown height (33px) */}

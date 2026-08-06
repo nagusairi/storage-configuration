@@ -8,6 +8,8 @@ import { SetupWizard } from '../../components/warehouse-setup/SetupWizard';
 import { WarehouseSetupScreen } from '../../components/warehouse-setup/WarehouseSetupScreen';
 import { OverviewTab } from '../../components/warehouse-setup/OverviewTab';
 import { PublishedProtectionModal } from '../../components/warehouse-setup/modals/PublishedProtectionModal';
+import { WarehouseHubScreen } from '../../components/warehouse-setup/WarehouseHubScreen';
+import { WarehouseCompareModal } from '../../components/warehouse-setup/modals/WarehouseCompareModal';
 
 function makeInitialWizardState(
   config: WarehouseConfig,
@@ -28,12 +30,18 @@ function makeInitialWizardState(
 }
 
 const DEPENDENT_ZONE_IDS = ['zone-a', 'zone-b', 'zone-c'];
+const ALL_WAREHOUSE_CONFIGS = Object.values(MOCK_WAREHOUSE_CONFIGS);
 
 export default function StorageConfigurationV4() {
+  const [workspaceMode, setWorkspaceMode] = useState<'hub' | 'detail'>('detail');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('wh-1');
   const [activeTab, setActiveTab] = useState<EntryTab>('overview');
   const [wizardState, setWizardState] = useState<WizardState | null>(null);
   const [showWarehouseSetup, setShowWarehouseSetup] = useState(false);
+
+  // Compare Modal state
+  const [compareWarehouses, setCompareWarehouses] = useState<WarehouseConfig[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   // Published protection modal state
   const [showProtectionModal, setShowProtectionModal] = useState(false);
@@ -465,9 +473,9 @@ export default function StorageConfigurationV4() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <ModulePageTemplate
-      title="Storage Configuration v4"
-      subtitle="Warehouse setup and configuration (v4)"
-      breadcrumbs={['Dashboard', 'Storage Configuration v4']}
+      title={workspaceMode === 'hub' ? "Warehouse Configuration Hub" : "Storage Configuration v4"}
+      subtitle={workspaceMode === 'hub' ? "Manage and monitor all warehouse configurations" : "Warehouse setup and configuration (v4)"}
+      breadcrumbs={workspaceMode === 'hub' ? ['Dashboard', 'Warehouse Configuration Hub'] : ['Dashboard', 'Warehouse Configuration Hub', config.warehouseName]}
       disableTemplatePadding
     >
       <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup ? 'p-0' : 'p-4 sm:p-5'}`}>
@@ -487,6 +495,19 @@ export default function StorageConfigurationV4() {
             }}
             warehouseName={config.warehouseName}
           />
+        ) : workspaceMode === 'hub' ? (
+          <WarehouseHubScreen
+            warehouses={ALL_WAREHOUSE_CONFIGS}
+            onSelectWarehouse={(id) => {
+              setSelectedWarehouseId(id);
+              setWorkspaceMode('detail');
+            }}
+            onNewWarehouse={() => setShowWarehouseSetup(true)}
+            onCompare={(selected) => {
+              setCompareWarehouses(selected);
+              setShowCompareModal(true);
+            }}
+          />
         ) : (
           <EntryScreen
             config={config}
@@ -497,8 +518,20 @@ export default function StorageConfigurationV4() {
             onSetupClick={openWizard}
             onNewWarehouseClick={() => setShowWarehouseSetup(true)}
             onTabContent={renderTabContent}
+            onViewAllWarehouses={() => setWorkspaceMode('hub')}
           />
         )}
+
+        {/* Side-by-Side Comparison Modal */}
+        <WarehouseCompareModal
+          isOpen={showCompareModal}
+          onClose={() => setShowCompareModal(false)}
+          warehouses={compareWarehouses}
+          onOpenConfig={(id) => {
+            setSelectedWarehouseId(id);
+            setWorkspaceMode('detail');
+          }}
+        />
 
         {/* Protection Modal for Published Models */}
         <PublishedProtectionModal
