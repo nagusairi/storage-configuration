@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, AlertTriangle, Info, ShieldAlert, Search, Filter, LayoutGrid, List, Sliders, X } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Info, ShieldAlert, Search, Filter, LayoutGrid, List, Sliders, X, CheckCircle2 } from 'lucide-react';
 import { ModulePageTemplate } from '../../components/layouts/ModulePageTemplate';
 import type { WizardState, SetupMethod, EntryTab, WarehouseConfig, WizardStep, ZoneConfig, ConfigStatus } from '../../components/warehouse-setup/types';
 import { MOCK_WAREHOUSE_CONFIGS, STANDARD_6_LEVEL } from '../../components/warehouse-setup/mockData';
@@ -101,6 +101,22 @@ export default function StorageConfigurationV5() {
 
   // Dedicated Zone Manager Wizard state
   const [showZoneManagerWizard, setShowZoneManagerWizard] = useState(false);
+
+  // Success Toast Notification state
+  const [toastNotification, setToastNotification] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
+
+  const showPublishSuccessToast = (customDetail?: string) => {
+    setToastNotification({
+      title: '✓ Configuration Published Successfully',
+      description: customDetail ?? `Warehouse blueprint for ${config.warehouseName} has been published and is now live (v2.4).`,
+    });
+    setTimeout(() => {
+      setToastNotification(null);
+    }, 4500);
+  };
 
   // Active warehouse configuration data
   const rawConfig = MOCK_WAREHOUSE_CONFIGS[selectedWarehouseId] ?? MOCK_WAREHOUSE_CONFIGS['wh-1'];
@@ -913,6 +929,7 @@ export default function StorageConfigurationV5() {
             state={wizardState}
             onChange={setWizardState}
             onClose={() => setWizardState(null)}
+            onPublish={() => showPublishSuccessToast()}
             warehouseName={config.warehouseName}
           />
         ) : showWarehouseSetup ? (
@@ -1258,6 +1275,24 @@ export default function StorageConfigurationV5() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Success Toast Notification ────────────────────────────────────────── */}
+        {toastNotification && (
+          <div className="fixed bottom-5 right-5 z-50 bg-[#172B4D] text-white px-4 py-3.5 rounded-lg shadow-2xl flex items-start gap-3 border border-gray-700 animate-in slide-in-from-bottom duration-300 max-w-md">
+            <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h5 className="text-xs font-bold text-white">{toastNotification.title}</h5>
+              <p className="text-[11px] text-gray-300 mt-0.5 leading-relaxed">{toastNotification.description}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastNotification(null)}
+              className="text-gray-400 hover:text-white p-0.5 -mr-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>

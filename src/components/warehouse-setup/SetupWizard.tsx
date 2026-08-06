@@ -16,6 +16,7 @@ interface SetupWizardProps {
   state: WizardState;
   onChange: (state: WizardState) => void;
   onClose: () => void;
+  onPublish?: () => void;
   warehouseName: string;
 }
 
@@ -51,7 +52,7 @@ const OPERATIONAL_IMPACT_ZONE_STEPS: { id: WizardStep; label: string; short: str
   { id: 8, label: 'Review & Publish', short: 'Publish' },
 ];
 
-export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWizardProps) {
+export function SetupWizard({ state, onChange, onClose, onPublish, warehouseName }: SetupWizardProps) {
   const isZoneMode = state.wizardMode === 'zone';
   const targetZone = state.zones[0];
   const hasOperationalImpact = isZoneMode && targetZone && DEPENDENT_ZONE_IDS.includes(targetZone.id);
@@ -87,6 +88,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
 
   const handlePublish = () => {
     onChange({ ...state, isDirty: false });
+    if (onPublish) onPublish();
     onClose();
   };
 
