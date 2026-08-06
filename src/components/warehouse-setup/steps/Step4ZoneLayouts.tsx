@@ -827,17 +827,6 @@ function ZoneCard({
       {showBuildScratchWizard && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl border border-[#d1def0] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
-            {showReorderUndoToast && (
-              <div className="absolute top-16 left-6 right-6 bg-[#172B4D] text-white px-4 py-2 rounded-xl shadow-xl flex items-center justify-between text-xs z-30 animate-in fade-in duration-150">
-                <span>✓ Hierarchy level reordered successfully.</span>
-                <button
-                  onClick={handleUndoReorder}
-                  className="px-2.5 py-1 bg-[#5C1F3D] hover:bg-[#4a1831] text-white rounded font-bold flex items-center gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" /> Undo
-                </button>
-              </div>
-            )}
 
             <div className="px-6 py-4 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
               <div>
@@ -954,6 +943,20 @@ function ZoneCard({
                     </div>
                     <span className="text-[11px] font-semibold text-green-700 font-mono">✓ Draft Saved • Just now</span>
                   </div>
+
+                  {/* Inline Reorder Undo Toast Banner (strictly visible inside Step 2 under header) */}
+                  {showReorderUndoToast && (
+                    <div className="bg-[#172B4D] text-white px-4 py-2 rounded-xl shadow-md flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+                      <span>✓ Hierarchy level reordered successfully.</span>
+                      <button
+                        type="button"
+                        onClick={handleUndoReorder}
+                        className="px-2.5 py-1 bg-[#5C1F3D] hover:bg-[#4a1831] text-white rounded font-bold flex items-center gap-1 text-[11px]"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Undo
+                      </button>
+                    </div>
+                  )}
 
                   <div className="bg-purple-50/60 border border-purple-200 rounded-xl p-3 flex items-center justify-between text-xs">
                     <span className="font-semibold text-purple-900">Live Hierarchy Preview:</span>
