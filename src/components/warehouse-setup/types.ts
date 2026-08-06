@@ -45,6 +45,9 @@ export interface ZoneConfig {
   code: string;
   status: 'active' | 'inactive' | 'maintenance';
   hierarchyMode: 'default' | 'custom';
+  hierarchySource?: 'warehouse' | 'model';
+  hierarchyModelSourceName?: string;
+  hierarchyModelSourceCategory?: string;
   customHierarchyModel?: HierarchyModel;
   generation: GenerationConfig;
   pickingStrategy: PickingStrategy;
