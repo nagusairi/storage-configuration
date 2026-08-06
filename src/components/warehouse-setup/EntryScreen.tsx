@@ -74,11 +74,11 @@ function PublishStatusBadge({ status }: { status: WarehouseConfig['publishStatus
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 function KPICard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
   return (
-    <div className="flex-1 min-w-0 bg-white rounded-lg border border-[#d1def0] px-4 py-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${color}`}>{icon}</div>
-      <div className="min-w-0">
-        <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide truncate">{label}</p>
-        <p className="text-sm font-semibold text-[#172B4D] truncate">{value}</p>
+    <div className="flex-1 min-w-0 bg-white rounded-lg border border-[#d1def0] px-3 py-2 flex items-center gap-2.5 shadow-2xs hover:shadow-xs transition-shadow">
+      <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${color}`}>{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-0.5 truncate">{label}</p>
+        <p className="text-xs font-bold text-[#172B4D] leading-tight truncate">{value}</p>
       </div>
     </div>
   );
@@ -250,13 +250,13 @@ export function EntryScreen({
       </div>
 
       {/* ── KPI Cards (always visible) ────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-        <KPICard icon={<MapPin    className="w-4 h-4 text-purple-600" />} color="bg-purple-50" label="Zones"              value={isDash ? '—' : kpis.zoneCount} />
-        <KPICard icon={<Package   className="w-4 h-4 text-blue-600"   />} color="bg-blue-50"   label="Storage Locations" value={isDash ? '—' : kpis.storageLocations.toLocaleString()} />
-        <KPICard icon={<Layers    className="w-4 h-4 text-indigo-600" />} color="bg-indigo-50" label="Capacity"          value={isDash ? '—' : `${kpis.capacity.toLocaleString()} ${kpis.capacityUnit}`} />
-        <KPICard icon={<TrendingUp className="w-4 h-4 text-orange-600"/>} color="bg-orange-50" label="Utilization"       value={isDash ? '—' : `${kpis.utilization}%`} />
-        <KPICard icon={<GitBranch className="w-4 h-4 text-teal-600"  />} color="bg-teal-50"   label="Active Hierarchy"  value={isDash ? '—' : kpis.activeHierarchyName} />
-        <KPICard icon={<Calendar  className="w-4 h-4 text-rose-600"  />} color="bg-rose-50"   label="Last Published"    value={isDash ? '—' : kpis.lastPublished} />
+      <div className="flex items-center gap-2.5 mb-2.5 flex-shrink-0">
+        <KPICard icon={<MapPin    className="w-3.5 h-3.5 text-purple-600" />} color="bg-purple-50" label="Zones"              value={isDash ? '—' : kpis.zoneCount} />
+        <KPICard icon={<Package   className="w-3.5 h-3.5 text-blue-600"   />} color="bg-blue-50"   label="Storage Locations" value={isDash ? '—' : kpis.storageLocations.toLocaleString()} />
+        <KPICard icon={<Layers    className="w-3.5 h-3.5 text-indigo-600" />} color="bg-indigo-50" label="Capacity"          value={isDash ? '—' : `${kpis.capacity.toLocaleString()} ${kpis.capacityUnit}`} />
+        <KPICard icon={<TrendingUp className="w-3.5 h-3.5 text-orange-600"/>} color="bg-orange-50" label="Utilization"       value={isDash ? '—' : `${kpis.utilization}%`} />
+        <KPICard icon={<GitBranch className="w-3.5 h-3.5 text-teal-600"  />} color="bg-teal-50"   label="Active Hierarchy"  value={isDash ? '—' : kpis.activeHierarchyName} />
+        <KPICard icon={<Calendar  className="w-3.5 h-3.5 text-rose-600"  />} color="bg-rose-50"   label="Last Published"    value={isDash ? '—' : kpis.lastPublished} />
       </div>
 
       {/* ── Content Area: 3-way router ───────────────────────────────────── */}
