@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   ChevronDown,
@@ -16,7 +16,10 @@ import {
   Lightbulb,
   ArrowRight,
   Save,
-  Check
+  Check,
+  ShieldAlert,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel } from '../types';
 import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry } from '../hierarchyModelsData';
@@ -31,6 +34,8 @@ const STATUS_COLORS = {
   inactive: 'bg-gray-100 text-gray-600',
   maintenance: 'bg-amber-100 text-amber-700',
 };
+
+const DEPENDENT_ZONE_IDS = ['zone-a', 'zone-b', 'zone-c'];
 
 function generateId() {
   return `zone-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
@@ -57,23 +62,35 @@ function ZoneCard({
   const [showFullCatalogModal, setShowFullCatalogModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
-  // Success Banner State (shown when a model was newly created/imported)
-  const [appliedBannerInfo, setAppliedBannerInfo] = useState<{ modelName: string; isSaved: boolean } | null>(null);
+  // Auto-dismissing toast for Outcome 1 (Compatible)
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Extract level 1 prefix and business label
+  // Outcome 2 (Review Required - Impact Assessment) Modal State
+  const [showImpactModal, setShowImpactModal] = useState(false);
+  const [pendingModelToApply, setPendingModelToApply] = useState<HierarchyModelCatalogEntry | null>(null);
+
+  // Outcome 3 (Conflict Detected) Modal State
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictDetails, setConflictDetails] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
   const rawName = zone.name || 'Zone A';
   const nameParts = rawName.split(' — ');
   const levelPrefix = defaultHierarchyModel.levels[0]?.name ?? 'Zone';
   const businessLabel = nameParts[1] ?? nameParts[0].replace(/^Zone\s+[A-[#]*/i, '') ?? 'General Storage';
 
-  // Source selection: 'warehouse' (Inherit) vs 'model' (Use Hierarchy Model)
   const isInherited = (zone.hierarchySource ?? (zone.hierarchyMode === 'custom' ? 'model' : 'warehouse')) === 'warehouse';
 
   const activeModel = isInherited
     ? defaultHierarchyModel
     : (zone.customHierarchyModel ?? defaultHierarchyModel);
 
-  // Derived badge label
   const getSourceBadge = () => {
     if (isInherited) return 'Inherited from Warehouse';
     if (zone.hierarchyModelSourceName) {
@@ -82,7 +99,6 @@ function ZoneCard({
     return `${activeModel.name} (Custom Model)`;
   };
 
-  // Smart Recommendation based on Business Label
   const smartRecommendation = HIERARCHY_MODELS_CATALOG.find(entry => {
     const q = businessLabel.toLowerCase();
     if (q.includes('cold') || q.includes('freezer') || q.includes('frozen')) {
@@ -100,7 +116,6 @@ function ZoneCard({
     return false;
   });
 
-  // Filtered catalog
   const filteredCatalog = HIERARCHY_MODELS_CATALOG.filter(entry => {
     if (activeCategoryFilter !== 'all' && entry.category !== activeCategoryFilter) return false;
     if (searchQuery.trim()) {
@@ -110,7 +125,34 @@ function ZoneCard({
     return true;
   });
 
-  const handleApplyModel = (entry: HierarchyModelCatalogEntry, isNewlyCreated = false) => {
+  // ── HIERARCHY COMPATIBILITY VALIDATION ENGINE ─────────────────────────────
+  const initiateApplyModel = (entry: HierarchyModelCatalogEntry) => {
+    const hasOperationalData = DEPENDENT_ZONE_IDS.includes(zone.id);
+    const hasConflict = entry.id === 'hm-[#conflict-test]'; // Synthetic conflict trigger test if needed
+
+    if (hasConflict) {
+      // OUTCOME 3: CONFLICT DETECTED
+      setConflictDetails([
+        'Active warehouse putaway rule "PR-102" references missing hierarchy level "Shelf".',
+        'Invalid storage location mappings detected for 142 bins.',
+        'Barcode pattern conflict: Entry barcode format does not match zone prefix rules.',
+      ]);
+      setShowConflictModal(true);
+      return;
+    }
+
+    if (hasOperationalData) {
+      // OUTCOME 2: REVIEW REQUIRED (IMPACT ASSESSMENT)
+      setPendingModelToApply(entry);
+      setShowImpactModal(true);
+      return;
+    }
+
+    // OUTCOME 1: COMPATIBLE (SKIP IMPACT ASSESSMENT FOR NEW ZONES)
+    applyModelDirectly(entry);
+  };
+
+  const applyModelDirectly = (entry: HierarchyModelCatalogEntry) => {
     onUpdate({
       ...zone,
       hierarchyMode: 'custom',
@@ -120,9 +162,9 @@ function ZoneCard({
       customHierarchyModel: entry.model,
     });
     setShowAdvancedHierarchy(false);
-    if (isNewlyCreated) {
-      setAppliedBannerInfo({ modelName: entry.name, isSaved: false });
-    }
+    setShowImpactModal(false);
+    setPendingModelToApply(null);
+    setToastMessage(`✓ Hierarchy Applied Successfully: "${entry.name}" has been applied to ${zone.name}. No operational data was affected.`);
   };
 
   const handleBusinessLabelChange = (newLabel: string) => {
@@ -130,25 +172,24 @@ function ZoneCard({
     onUpdate({ ...zone, name: combinedName });
   };
 
-  const handleSaveToLibrary = () => {
-    if (!appliedBannerInfo) return;
-    HIERARCHY_MODELS_CATALOG.push({
-      id: `hm-saved-${Date.now()}`,
-      name: appliedBannerInfo.modelName,
-      category: 'organization',
-      categoryLabel: 'Organization Hierarchy Models',
-      description: `Custom model created for ${zone.name}`,
-      sourceBadge: 'Organization Model',
-      updatedAt: 'Saved just now',
-      levelCount: activeModel.levels.length,
-      tags: ['Custom', 'Organization'],
-      model: activeModel,
-    });
-    setAppliedBannerInfo(prev => (prev ? { ...prev, isSaved: true } : null));
-  };
-
   return (
-    <div className="bg-white border border-[#d1def0] rounded-xl overflow-hidden shadow-xs hover:border-[#5C1F3D]/40 transition-colors">
+    <div className="bg-white border border-[#d1def0] rounded-xl overflow-hidden shadow-xs hover:border-[#5C1F3D]/40 transition-colors relative">
+      {/* ── AUTO-DISMISSING TOAST FOR OUTCOME 1 (COMPATIBLE) ─────────────── */}
+      {toastMessage && (
+        <div className="bg-[#172B4D] text-white px-4 py-2.5 shadow-xl flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+            <span className="font-semibold">{toastMessage}</span>
+          </div>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-white/70 hover:text-white text-xs font-bold ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* ── Zone Header Bar ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -198,48 +239,6 @@ function ZoneCard({
       {/* ── Expanded Content Canvas ────────────────────────────────────────── */}
       {expanded && (
         <div className="border-t border-[#d1def0] px-5 py-5 bg-[#f7f8f9] space-y-4">
-          {/* ── LIGHTWEIGHT SUCCESS BANNER (FOR NEWLY CREATED / LINKED MODELS) ─ */}
-          {appliedBannerInfo && (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
-                  ✓
-                </div>
-                <div className="text-xs">
-                  <span className="font-bold text-purple-950 block">
-                    Hierarchy "{appliedBannerInfo.modelName}" created successfully and applied to {zone.name}.
-                  </span>
-                  <span className="text-purple-700 text-[11px]">
-                    The model is automatically linked to this zone.
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {!appliedBannerInfo.isSaved ? (
-                  <button
-                    type="button"
-                    onClick={handleSaveToLibrary}
-                    className="px-3 py-1.5 text-xs font-semibold text-purple-900 bg-white border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1"
-                  >
-                    <Save className="w-3.5 h-3.5" /> Save as Reusable Model
-                  </button>
-                ) : (
-                  <span className="text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Saved to Organization Models
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setAppliedBannerInfo(null)}
-                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831]"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* ── LEVEL 1 HIERARCHY NAMING CONTROL ───────────────────────────── */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
@@ -288,7 +287,6 @@ function ZoneCard({
               </div>
             </div>
 
-            {/* Live Display Name Preview */}
             <div className="bg-[#f7f8f9] border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs">
               <span className="text-gray-500 font-medium">Displayed Instance Name:</span>
               <span className="font-bold text-[#172B4D] font-mono bg-white border border-gray-200 px-2 py-0.5 rounded">
@@ -318,7 +316,6 @@ function ZoneCard({
               </button>
             </div>
 
-            {/* Read-Only Inherited Summary */}
             {isInherited && !showAdvancedHierarchy && (
               <div className="bg-green-50/60 border border-green-200/70 rounded-xl p-3 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
@@ -343,7 +340,6 @@ function ZoneCard({
             {/* ── PROGRESSIVELY REVEALED ADVANCED SELECTOR ───────────────────── */}
             {showAdvancedHierarchy && (
               <div className="bg-[#fcfdfe] border border-[#d1def0] rounded-xl p-4 space-y-4 pt-4 animate-in fade-in duration-200">
-                {/* Source Choice Radio */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -372,14 +368,7 @@ function ZoneCard({
                   <button
                     type="button"
                     onClick={() =>
-                      onUpdate({
-                        ...zone,
-                        hierarchyMode: 'custom',
-                        hierarchySource: 'model',
-                        hierarchyModelSourceName: zone.hierarchyModelSourceName ?? 'Cold Storage',
-                        hierarchyModelSourceCategory: zone.hierarchyModelSourceCategory ?? 'flowOne Model',
-                        customHierarchyModel: zone.customHierarchyModel ?? HIERARCHY_MODELS_CATALOG[1].model,
-                      })
+                      initiateApplyModel(HIERARCHY_MODELS_CATALOG[1])
                     }
                     className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
                       !isInherited ? 'border-[#5C1F3D] bg-purple-50/20 font-bold' : 'border-gray-200 bg-white'
@@ -396,7 +385,6 @@ function ZoneCard({
 
                 {!isInherited && (
                   <div className="space-y-3 pt-2">
-                    {/* Smart Model Suggestion Box */}
                     {smartRecommendation && (
                       <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
@@ -408,7 +396,7 @@ function ZoneCard({
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleApplyModel(smartRecommendation)}
+                          onClick={() => initiateApplyModel(smartRecommendation)}
                           className="px-3 py-1 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-2xs"
                         >
                           Apply Suggestion
@@ -416,7 +404,6 @@ function ZoneCard({
                       </div>
                     )}
 
-                    {/* Quick Selector Header */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#172B4D]">Select Hierarchy Model</span>
                       <button
@@ -428,7 +415,6 @@ function ZoneCard({
                       </button>
                     </div>
 
-                    {/* Category Filter Tabs */}
                     <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 overflow-x-auto">
                       {[
                         { id: 'all', label: 'All Models' },
@@ -451,7 +437,6 @@ function ZoneCard({
                       ))}
                     </div>
 
-                    {/* Compact Grid of Recent Models */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {filteredCatalog.slice(0, 4).map(entry => {
                         const isSelectedModel = activeModel.name === entry.name;
@@ -476,7 +461,7 @@ function ZoneCard({
 
                             <button
                               type="button"
-                              onClick={() => handleApplyModel(entry)}
+                              onClick={() => initiateApplyModel(entry)}
                               className={`mt-2 w-full py-1 text-[11px] font-bold rounded-lg transition-colors ${
                                 isSelectedModel
                                   ? 'bg-green-50 text-green-700 border border-green-200'
@@ -490,7 +475,6 @@ function ZoneCard({
                       })}
                     </div>
 
-                    {/* ── BOTTOM ADVANCED ACTIONS ──────────────────────────────── */}
                     <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2">
                         <button
@@ -509,7 +493,7 @@ function ZoneCard({
                               tags: ['Custom'],
                               model: HIERARCHY_MODELS_CATALOG[0].model,
                             };
-                            handleApplyModel(newEntry, true);
+                            initiateApplyModel(newEntry);
                           }}
                           className="px-3.5 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
                         >
@@ -535,6 +519,109 @@ function ZoneCard({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── OUTCOME 2: REVIEW REQUIRED (IMPACT ASSESSMENT MODAL) ─────────── */}
+      {showImpactModal && pendingModelToApply && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-amber-200 max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0">
+                <ShieldAlert className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#172B4D]">Impact Assessment — Review Required</h3>
+                <p className="text-xs text-amber-800 font-semibold mt-0.5">
+                  Applying "{pendingModelToApply.name}" will affect this Published Zone ({zone.name}).
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 space-y-2">
+              <p className="font-semibold text-amber-950">Detected Operational Impact:</p>
+              <ul className="space-y-1 font-mono text-[11px] text-amber-900 pl-2">
+                <li>• 1,248 Active Storage Locations</li>
+                <li>• 352 Inventory SKU Records</li>
+                <li>• 3 Putaway Rules & 2 Picking Strategies</li>
+                <li>• 1 Replenishment Rule</li>
+              </ul>
+              <p className="text-[11px] text-amber-800 pt-1 italic">
+                A Draft Version is required before applying this hierarchy to preserve operational integrity.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImpactModal(false);
+                  setPendingModelToApply(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => applyModelDirectly(pendingModelToApply)}
+                className="px-4 py-2 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-xs"
+              >
+                Create Draft & Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── OUTCOME 3: CONFLICT DETECTED (HIERARCHY VALIDATION FAILED MODAL) ── */}
+      {showConflictModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-red-200 max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#172B4D]">Hierarchy Validation Failed</h3>
+                <p className="text-xs text-red-700 font-semibold mt-0.5">
+                  The selected Hierarchy Model cannot be applied because operational conflicts were detected.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-50/80 border border-red-200 rounded-xl p-4 text-xs text-red-900 space-y-2">
+              <p className="font-semibold text-red-950">Detected Validation Conflicts:</p>
+              <ul className="space-y-1 font-mono text-[11px] text-red-900 pl-2">
+                {conflictDetails.map((c, idx) => (
+                  <li key={idx}>• {c}</li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-red-800 pt-1 italic">
+                Resolve these structural conflicts before applying the hierarchy model.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowConflictModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  alert('Opening detailed Conflict Inspector...');
+                  setShowConflictModal(false);
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-xs"
+              >
+                View Conflicts
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -598,7 +685,7 @@ function ZoneCard({
                   </div>
                   <button
                     onClick={() => {
-                      handleApplyModel(entry);
+                      initiateApplyModel(entry);
                       setShowFullCatalogModal(false);
                     }}
                     className="mt-4 w-full py-2 text-xs font-bold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831]"
@@ -659,8 +746,8 @@ function ZoneCard({
                     tags: ['Imported'],
                     model: HIERARCHY_MODELS_CATALOG[0].model,
                   };
-                  handleApplyModel(importedEntry, true);
                   setShowImportModal(false);
+                  initiateApplyModel(importedEntry);
                 }}
                 className="px-4 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg shadow-xs"
               >
