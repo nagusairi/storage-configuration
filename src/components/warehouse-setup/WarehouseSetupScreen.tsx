@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Sparkles, Layers, Upload, BookOpen, Search,
-  ArrowLeft, ArrowRight, Check, ChevronDown,
+  ArrowRight, Check, ChevronDown, X,
   Warehouse, Snowflake, Factory, Store, ShieldCheck, Building2
 } from 'lucide-react';
 import type { SetupMethod } from './types';
@@ -113,26 +113,18 @@ export function WarehouseSetupScreen({
   return (
     <div className="flex flex-col h-full bg-[#f7f8f9] rounded-lg border border-[#d1def0] overflow-hidden">
       {/* ── Top Header ────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#d1def0] px-8 py-5 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onCancel}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 flex items-center justify-center"
-            title="Return to Storage Configuration"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-[#172B4D]">Warehouse Setup</h1>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{warehouseName}</p>
-          </div>
+      <div className="bg-white border-b border-[#d1def0] px-8 py-4 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h1 className="text-lg font-bold text-[#172B4D]">Warehouse Setup</h1>
+          <p className="text-xs text-gray-500 font-medium mt-0.5">{warehouseName}</p>
         </div>
 
         <button
           onClick={onCancel}
-          className="px-3.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="p-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 transition-colors text-[#172B4D] hover:text-black font-semibold flex items-center justify-center shadow-2xs"
+          title="Close setup"
         >
-          Cancel Setup
+          <X className="w-4 h-4 text-[#172B4D]" />
         </button>
       </div>
 
