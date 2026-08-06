@@ -168,11 +168,11 @@ function DraftResumePanel({
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Primary */}
           <button
             onClick={onResume}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
+            className="h-[40px] px-4 text-[14px] font-medium leading-none text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-2"
           >
             <PlayCircle className="w-4 h-4 flex-shrink-0" />
             <span>Resume Draft</span>
@@ -180,21 +180,21 @@ function DraftResumePanel({
           {/* Secondary actions */}
           <button
             onClick={onPublish}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors whitespace-nowrap flex-shrink-0"
+            className="h-[40px] px-4 text-[14px] font-medium leading-none text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-2"
           >
             <Globe className="w-4 h-4 flex-shrink-0" />
             <span>Publish</span>
           </button>
           <button
             onClick={onDuplicate}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0"
+            className="h-[40px] px-4 text-[14px] font-medium leading-none text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-2"
           >
             <Copy className="w-4 h-4 flex-shrink-0" />
             <span>Duplicate</span>
           </button>
           <button
             onClick={onDiscard}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap flex-shrink-0 ml-auto"
+            className="h-[40px] px-4 text-[14px] font-medium leading-none text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-2"
           >
             <Trash2 className="w-4 h-4 flex-shrink-0" />
             <span>Discard Draft</span>
