@@ -558,13 +558,6 @@ export default function StorageConfigurationV5() {
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Zone</span>
                   </button>
-
-                  <button
-                    onClick={() => setShowZoneManagerWizard(true)}
-                    className="h-[32px] px-3.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-[3px] transition-colors whitespace-nowrap"
-                  >
-                    Zone Manager
-                  </button>
                 </div>
               </div>
 
