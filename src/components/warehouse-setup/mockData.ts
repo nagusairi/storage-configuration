@@ -93,7 +93,7 @@ export const MOCK_WAREHOUSE_CONFIGS: Record<string, WarehouseConfig> = {
         dimensions: { width: 50, depth: 80, height: 12, unit: 'meters' }
       },
       {
-        id: 'zone-b', name: 'Zone B — High-Value', code: 'ZB', status: 'active',
+        id: 'zone-b', name: 'Zone B — High-Value Storage', code: 'ZB', status: 'active',
         hierarchyMode: 'custom',
         customHierarchyModel: COMPACT_3_LEVEL,
         pickingStrategy: 'FEFO',
@@ -101,16 +101,28 @@ export const MOCK_WAREHOUSE_CONFIGS: Record<string, WarehouseConfig> = {
         dimensions: { width: 20, depth: 30, height: 10, unit: 'meters' }
       },
       {
-        id: 'zone-c', name: 'Zone C — Cold Chain', code: 'ZC', status: 'active',
+        id: 'zone-c', name: 'Zone C — Cold Chain Storage', code: 'ZC', status: 'active',
         hierarchyMode: 'custom',
         customHierarchyModel: COLD_CHAIN,
         pickingStrategy: 'FEFO',
         generation: { levels: [{ levelId: 'cc2', levelName: 'Freezers', count: 4 }, { levelId: 'cc3', levelName: 'Trays', count: 8 }, { levelId: 'cc4', levelName: 'Bins', count: 12 }] },
         dimensions: { width: 15, depth: 20, height: 6, unit: 'meters' }
       },
+      {
+        id: 'zone-d', name: 'Zone D — Bulk Pallet Storage', code: 'ZD', status: 'active',
+        hierarchyMode: 'default', pickingStrategy: 'FIFO',
+        generation: DEFAULT_GENERATION,
+        dimensions: { width: 60, depth: 100, height: 14, unit: 'meters' }
+      },
+      {
+        id: 'zone-f', name: 'Zone F — Fast-Pick Forward', code: 'ZF', status: 'active',
+        hierarchyMode: 'default', pickingStrategy: 'FIFO',
+        generation: DEFAULT_GENERATION,
+        dimensions: { width: 30, depth: 40, height: 8, unit: 'meters' }
+      },
     ],
     kpis: {
-      zoneCount: 3,
+      zoneCount: 5,
       storageLocations: 14400,
       capacity: 24000,
       capacityUnit: 'bins',

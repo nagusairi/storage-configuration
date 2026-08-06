@@ -116,13 +116,19 @@ export default function StorageConfigurationV3() {
       case 'overview':
         return <OverviewTab config={config} onSetupClick={() => openWizard(undefined, 1)} />;
 
-      case 'hierarchy-model':
+      case 'hierarchy-model': {
+        const inheritedZones = config.zones.filter(z => z.hierarchyMode !== 'custom');
+        const customZones = config.zones.filter(z => z.hierarchyMode === 'custom');
+
         return (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-5">
+          <div className="p-6 space-y-6">
+            {/* Header Bar */}
+            <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-[#172B4D] mb-1">Hierarchy Model</h3>
-                <p className="text-sm text-gray-500">Active hierarchy for {config.warehouseName}</p>
+                <p className="text-sm text-gray-500">
+                  Active master hierarchy blueprint for <span className="font-medium text-[#172B4D]">{config.warehouseName}</span>
+                </p>
               </div>
               <button
                 onClick={() => handleEditHierarchyClick()}
@@ -131,26 +137,123 @@ export default function StorageConfigurationV3() {
                 Edit Hierarchy Model
               </button>
             </div>
+
             {config.activeHierarchyModel ? (
-              <div className="bg-white rounded-xl border border-[#d1def0] p-5 shadow-sm">
-                <h4 className="text-sm font-semibold text-[#172B4D] mb-1">{config.activeHierarchyModel.name}</h4>
-                <p className="text-xs text-gray-500 mb-4">{config.activeHierarchyModel.description}</p>
-                <div className="flex flex-col gap-2">
-                  {config.activeHierarchyModel.levels.map((lvl, idx) => (
-                    <div key={lvl.id} className="flex items-center gap-2" style={{ paddingLeft: `${idx * 20}px` }}>
-                      {idx > 0 && <div className="w-4 h-4 border-l-2 border-b-2 border-gray-200 rounded-bl flex-shrink-0" />}
-                      <div className="flex items-center gap-2 bg-[#f7f8f9] border border-[#d1def0] rounded-lg px-3 py-2">
-                        <span className="text-[10px] font-mono text-gray-400">L{idx + 1}</span>
-                        <span className="text-sm font-medium text-[#172B4D]">{lvl.name}</span>
-                        <span className="text-[10px] font-mono bg-white text-gray-500 border border-gray-200 px-1.5 rounded">{lvl.codePrefix}</span>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Active Hierarchy Blueprint Card (2 cols) */}
+                <div className="lg:col-span-2 bg-white rounded-xl border border-[#d1def0] p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    {/* Title & Metadata Badges */}
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <h4 className="text-base font-bold text-[#172B4D]">{config.activeHierarchyModel.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-100">
+                          Source: flowOne Template
+                        </span>
+                        <span className="text-[11px] font-medium bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100">
+                          Version: v1.2 (Active)
+                        </span>
+                        <span className="text-[11px] font-medium bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-100 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          Published
+                        </span>
                       </div>
                     </div>
-                  ))}
+
+                    <p className="text-xs text-gray-500 mb-6">{config.activeHierarchyModel.description}</p>
+
+                    {/* Level Visual Tree */}
+                    <div className="space-y-2.5">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Level Hierarchy Sequence ({config.activeHierarchyModel.levels.length} Levels):
+                      </p>
+                      {config.activeHierarchyModel.levels.map((lvl, idx) => (
+                        <div key={lvl.id} className="flex items-center gap-3" style={{ paddingLeft: `${idx * 20}px` }}>
+                          {idx > 0 && <div className="w-4 h-4 border-l-2 border-b-2 border-gray-200 rounded-bl flex-shrink-0" />}
+                          <div className="flex-1 flex items-center justify-between bg-[#f7f8f9] border border-[#d1def0] rounded-xl px-4 py-2.5 hover:border-[#5C1F3D]/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-mono font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded">
+                                L{idx + 1}
+                              </span>
+                              <span className="text-sm font-semibold text-[#172B4D]">{lvl.name}</span>
+                              <span className="text-xs font-mono bg-white text-gray-600 border border-gray-200 px-2 py-0.5 rounded font-medium">
+                                Prefix: {lvl.codePrefix}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {lvl.supportsCapacity && <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Capacity</span>}
+                              {lvl.supportsDimensions && <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">Dimensions</span>}
+                              {lvl.supportsBarcode && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">Barcode</span>}
+                              {lvl.supportsSerial && <span className="text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">Serial</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Hierarchy Usage Summary */}
+                <div className="bg-white rounded-xl border border-[#d1def0] p-6 shadow-sm flex flex-col gap-5">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#172B4D] mb-1">Hierarchy Usage Summary</h4>
+                    <p className="text-xs text-gray-500">
+                      Shows which zones inherit the master blueprint versus zones with custom overrides.
+                    </p>
+                  </div>
+
+                  {/* Section 1: Used By (Inherited) */}
+                  <div className="bg-green-50/50 border border-green-200/60 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-green-600" />
+                        Used By (Inherited)
+                      </span>
+                      <span className="text-xs font-bold bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                        {inheritedZones.length} Zone{inheritedZones.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {inheritedZones.map(z => (
+                        <div key={z.id} className="flex items-center justify-between text-xs bg-white border border-green-100 rounded-lg px-3 py-1.5">
+                          <span className="font-semibold text-[#172B4D]">{z.name}</span>
+                          <span className="font-mono text-gray-400 text-[10px]">{z.code}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section 2: Overridden By (Custom) */}
+                  <div className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-600" />
+                        Overridden By (Custom)
+                      </span>
+                      <span className="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                        {customZones.length} Zone{customZones.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {customZones.map(z => (
+                        <div key={z.id} className="flex items-center justify-between text-xs bg-white border border-amber-100 rounded-lg px-3 py-1.5">
+                          <div>
+                            <span className="font-semibold text-[#172B4D] block">{z.name}</span>
+                            <span className="text-[10px] text-amber-700 font-medium">
+                              Model: {z.customHierarchyModel?.name ?? 'Custom'}
+                            </span>
+                          </div>
+                          <span className="font-mono text-gray-400 text-[10px]">{z.code}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : <ComingSoon label="Hierarchy Model" />}
           </div>
         );
+      }
 
       case 'zone-layouts':
         return (
@@ -158,38 +261,94 @@ export default function StorageConfigurationV3() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-base font-semibold text-[#172B4D] mb-1">Zone Layouts</h3>
-                <p className="text-sm text-gray-500">{config.zones.length} zones configured</p>
+                <p className="text-sm text-gray-500">{config.zones.length} zones configured with metadata-driven hierarchies</p>
               </div>
-              <button onClick={() => openWizard(undefined, 3)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors">
+              <button onClick={() => openWizard(undefined, 3)} className="px-4 py-2 text-sm font-medium text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm">
                 Manage Zones
               </button>
             </div>
-            <div className="flex flex-col gap-3">
-              {config.zones.map(zone => (
-                <div key={zone.id} className="bg-white border border-[#d1def0] rounded-xl px-5 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{zone.code}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-[#172B4D]">{zone.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {zone.hierarchyMode === 'custom' ? (zone.customHierarchyModel?.name ?? 'Custom') : 'Default hierarchy'}
-                        {' · '}{zone.pickingStrategy}
+
+            <div className="flex flex-col gap-4">
+              {config.zones.map(zone => {
+                const isCustom = zone.hierarchyMode === 'custom';
+                const activeModel = isCustom ? zone.customHierarchyModel : config.activeHierarchyModel;
+                const levelsList = activeModel?.levels ?? [];
+
+                return (
+                  <div key={zone.id} className="bg-white border border-[#d1def0] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono font-bold bg-[#5C1F3D] text-white px-2.5 py-1 rounded-lg">
+                          {zone.code}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-[#172B4D]">{zone.name}</h4>
+                            {isCustom ? (
+                              <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                Custom Hierarchy Override
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold bg-green-50 text-green-800 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                Inherited from Warehouse Hierarchy
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Picking Strategy: <span className="font-semibold text-gray-700">{zone.pickingStrategy}</span>
+                            {zone.dimensions && ` · Dimensions: ${zone.dimensions.width}m × ${zone.dimensions.depth}m`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditHierarchyClick(3)}
+                          className="px-3.5 py-1.5 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors"
+                        >
+                          Edit Hierarchy
+                        </button>
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${zone.status === 'active' ? 'bg-green-50 text-green-700' : zone.status === 'maintenance' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {zone.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Compact Hierarchy Flow Preview */}
+                    <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-3">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Zone Storage Hierarchy Chain:
                       </p>
+                      <div className="flex items-center gap-1.5 overflow-x-auto">
+                        {!isCustom && (
+                          <>
+                            <span className="text-xs font-semibold bg-gray-200 text-gray-700 px-2.5 py-1 rounded-md">
+                              Warehouse
+                            </span>
+                            <span className="text-gray-400 font-bold text-xs">→</span>
+                          </>
+                        )}
+                        {levelsList.map((lvl, idx) => {
+                          const isLast = idx === levelsList.length - 1;
+                          return (
+                            <div key={lvl.id} className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${
+                                isCustom ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-white text-[#172B4D] border border-[#d1def0]'
+                              }`}>
+                                {lvl.name}
+                              </span>
+                              {!isLast && <span className="text-gray-400 font-bold text-xs">→</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleEditHierarchyClick(3)}
-                      className="px-3 py-1.5 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded hover:bg-[#f9f4f7] transition-colors"
-                    >
-                      Edit Hierarchy
-                    </button>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${zone.status === 'active' ? 'bg-green-50 text-green-700' : zone.status === 'maintenance' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {zone.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
