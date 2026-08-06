@@ -10,6 +10,8 @@ import {
   Download,
   ShieldCheck,
   ArrowUpRight,
+  ArrowRight,
+  PlayCircle,
   Sparkles,
   ChevronLeft,
   ChevronRight
