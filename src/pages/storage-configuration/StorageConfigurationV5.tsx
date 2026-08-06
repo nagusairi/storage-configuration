@@ -483,15 +483,6 @@ export default function StorageConfigurationV5() {
           setShowWarehouseSetup(false);
         }
       }}
-      breadcrumbActions={
-        <button
-          onClick={() => setShowWarehouseSetup(true)}
-          className="h-[32px] flex items-center gap-2 px-3.5 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-xs"
-        >
-          <Plus className="w-4 h-4" />
-          New Warehouse
-        </button>
-      }
       disableTemplatePadding
     >
       <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup ? 'p-0' : 'p-4 sm:p-5'}`}>
