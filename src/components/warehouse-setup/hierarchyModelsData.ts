@@ -1,6 +1,8 @@
 import type { HierarchyModel } from './types';
 import { STANDARD_6_LEVEL, COMPACT_3_LEVEL, COLD_CHAIN } from './mockData';
 
+export type HierarchyLifecycleStatus = 'published' | 'draft' | 'deprecated' | 'archived';
+
 export interface HierarchyModelCatalogEntry {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export interface HierarchyModelCatalogEntry {
   categoryLabel: string;
   description: string;
   sourceBadge: string;
+  lifecycleStatus: HierarchyLifecycleStatus;
   updatedAt: string;
   levelCount: number;
   tags: string[];
@@ -23,6 +26,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'flowOne Hierarchy Models',
     description: 'Classic 6-level warehouse structure: Zone → Aisle → Rack → Shelf → Bin.',
     sourceBadge: 'flowOne Model',
+    lifecycleStatus: 'published',
     updatedAt: 'Updated 2 days ago',
     levelCount: 5,
     tags: ['Standard', 'High-Density', 'Pallet & Bin'],
@@ -35,6 +39,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'flowOne Hierarchy Models',
     description: 'Temperature-controlled hierarchy: Cold Room → Freezer → Tray → Position.',
     sourceBadge: 'flowOne Model',
+    lifecycleStatus: 'published',
     updatedAt: 'Updated 1 week ago',
     levelCount: 4,
     tags: ['Cold Chain', 'Pharma', 'Perishables'],
@@ -47,6 +52,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'flowOne Hierarchy Models',
     description: 'Streamlined hierarchy: Zone → Rack → Bin for small fulfillment centers.',
     sourceBadge: 'flowOne Model',
+    lifecycleStatus: 'published',
     updatedAt: 'Updated 3 weeks ago',
     levelCount: 3,
     tags: ['Compact', 'Retail', 'Micro-Fulfillment'],
@@ -59,6 +65,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'flowOne Hierarchy Models',
     description: 'Fast-pick retail storage model: Section → Fixture → Shelf → Bin.',
     sourceBadge: 'flowOne Model',
+    lifecycleStatus: 'published',
     updatedAt: 'Updated 1 month ago',
     levelCount: 4,
     tags: ['Retail', 'Fast-Pick'],
@@ -83,6 +90,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'Organization Hierarchy Models',
     description: 'Secure, serial-tracked vault structure: Vault → Safe → Locker → Slot.',
     sourceBadge: 'Organization Model',
+    lifecycleStatus: 'published',
     updatedAt: 'Updated 5 days ago',
     levelCount: 4,
     tags: ['Secured', 'High Value', 'Serial Tracked'],
@@ -105,6 +113,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'Organization Hierarchy Models',
     description: 'Floor-standing heavy storage: Bay → Pallet Position.',
     sourceBadge: 'Organization Model',
+    lifecycleStatus: 'published',
     updatedAt: 'Updated 2 weeks ago',
     levelCount: 2,
     tags: ['Bulk', 'Pallet', 'Heavy Duty'],
@@ -118,6 +127,19 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
       ]
     }
   },
+  {
+    id: 'hm-org-deprecated-legacy',
+    name: 'Legacy 2021 Warehouse Model',
+    category: 'organization',
+    categoryLabel: 'Organization Hierarchy Models',
+    description: 'Legacy model retained for existing warehouses. Cannot be assigned to new zones.',
+    sourceBadge: 'Organization Model',
+    lifecycleStatus: 'deprecated',
+    updatedAt: 'Deprecated 6 months ago',
+    levelCount: 3,
+    tags: ['Legacy', 'Deprecated'],
+    model: COMPACT_3_LEVEL,
+  },
 
   // ── Draft Hierarchy Models ────────────────────────────────────────────────
   {
@@ -127,6 +149,7 @@ export const HIERARCHY_MODELS_CATALOG: HierarchyModelCatalogEntry[] = [
     categoryLabel: 'Draft Hierarchy Models',
     description: 'Experimental 5-level pilot model currently under review.',
     sourceBadge: 'Draft Model',
+    lifecycleStatus: 'draft',
     updatedAt: 'Saved 1 hour ago',
     levelCount: 5,
     tags: ['Draft', 'Under Review'],

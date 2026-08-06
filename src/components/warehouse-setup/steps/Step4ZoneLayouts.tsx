@@ -19,10 +19,14 @@ import {
   Check,
   ShieldAlert,
   AlertTriangle,
-  AlertCircle
+  AlertCircle,
+  Copy,
+  Wrench,
+  FileCode,
+  Lock
 } from 'lucide-react';
 import type { WizardState, ZoneConfig, HierarchyModel } from '../types';
-import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry } from '../hierarchyModelsData';
+import { HIERARCHY_MODELS_CATALOG, type HierarchyModelCatalogEntry, type HierarchyLifecycleStatus } from '../hierarchyModelsData';
 
 interface Props {
   state: WizardState;
@@ -33,6 +37,13 @@ const STATUS_COLORS = {
   active: 'bg-green-100 text-green-700',
   inactive: 'bg-gray-100 text-gray-600',
   maintenance: 'bg-amber-100 text-amber-700',
+};
+
+const LIFECYCLE_BADGE_MAP: Record<HierarchyLifecycleStatus, { label: string; className: string }> = {
+  published: { label: 'Published', className: 'bg-green-50 text-green-700 border-green-200' },
+  draft: { label: 'Draft', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  deprecated: { label: 'Deprecated', className: 'bg-red-50 text-red-700 border-red-200' },
+  archived: { label: 'Archived', className: 'bg-gray-100 text-gray-600 border-gray-200' },
 };
 
 const DEPENDENT_ZONE_IDS = ['zone-a', 'zone-b', 'zone-c'];
@@ -62,6 +73,9 @@ function ZoneCard({
   const [showFullCatalogModal, setShowFullCatalogModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
+  // Creation Methods Choice Modal State
+  const [showCreationMethodsModal, setShowCreationMethodsModal] = useState(false);
+
   // Auto-dismissing toast for Outcome 1 (Compatible)
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -72,6 +86,9 @@ function ZoneCard({
   // Outcome 3 (Conflict Detected) Modal State
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictDetails, setConflictDetails] = useState<string[]>([]);
+
+  // Success Banner State (shown when a model was newly created/imported)
+  const [appliedBannerInfo, setAppliedBannerInfo] = useState<{ modelName: string; isSaved: boolean } | null>(null);
 
   useEffect(() => {
     if (toastMessage) {
@@ -127,8 +144,13 @@ function ZoneCard({
 
   // ── HIERARCHY COMPATIBILITY VALIDATION ENGINE ─────────────────────────────
   const initiateApplyModel = (entry: HierarchyModelCatalogEntry) => {
+    if (entry.lifecycleStatus === 'deprecated' || entry.lifecycleStatus === 'archived') {
+      alert(`Model "${entry.name}" is ${entry.lifecycleStatus.toUpperCase()} and cannot be assigned to new zones.`);
+      return;
+    }
+
     const hasOperationalData = DEPENDENT_ZONE_IDS.includes(zone.id);
-    const hasConflict = entry.id === 'hm-[#conflict-test]'; // Synthetic conflict trigger test if needed
+    const hasConflict = entry.id === 'hm-[#conflict-test]';
 
     if (hasConflict) {
       // OUTCOME 3: CONFLICT DETECTED
@@ -148,11 +170,11 @@ function ZoneCard({
       return;
     }
 
-    // OUTCOME 1: COMPATIBLE (SKIP IMPACT ASSESSMENT FOR NEW ZONES)
+    // OUTCOME 1: COMPATIBLE
     applyModelDirectly(entry);
   };
 
-  const applyModelDirectly = (entry: HierarchyModelCatalogEntry) => {
+  const applyModelDirectly = (entry: HierarchyModelCatalogEntry, isNewlyCreated = false) => {
     onUpdate({
       ...zone,
       hierarchyMode: 'custom',
@@ -164,12 +186,54 @@ function ZoneCard({
     setShowAdvancedHierarchy(false);
     setShowImpactModal(false);
     setPendingModelToApply(null);
-    setToastMessage(`✓ Hierarchy Applied Successfully: "${entry.name}" has been applied to ${zone.name}. No operational data was affected.`);
+
+    if (isNewlyCreated) {
+      setAppliedBannerInfo({ modelName: entry.name, isSaved: false });
+    } else {
+      setToastMessage(`✓ Hierarchy Applied Successfully: "${entry.name}" has been applied to ${zone.name}. No operational data was affected.`);
+    }
   };
 
   const handleBusinessLabelChange = (newLabel: string) => {
     const combinedName = `${levelPrefix} — ${newLabel}`;
     onUpdate({ ...zone, name: combinedName });
+  };
+
+  const handleSaveToLibrary = () => {
+    if (!appliedBannerInfo) return;
+    HIERARCHY_MODELS_CATALOG.push({
+      id: `hm-saved-${Date.now()}`,
+      name: appliedBannerInfo.modelName,
+      category: 'organization',
+      categoryLabel: 'Organization Hierarchy Models',
+      description: `Custom model created for ${zone.name}`,
+      sourceBadge: 'Organization Model',
+      lifecycleStatus: 'published',
+      updatedAt: 'Saved just now',
+      levelCount: activeModel.levels.length,
+      tags: ['Custom', 'Organization'],
+      model: activeModel,
+    });
+    setAppliedBannerInfo(prev => (prev ? { ...prev, isSaved: true } : null));
+  };
+
+  const handleCreationMethodSelect = (method: string) => {
+    setShowCreationMethodsModal(false);
+    const newModelName = `${businessLabel || 'Custom'} (${method})`;
+    const newEntry: HierarchyModelCatalogEntry = {
+      id: `hm-new-${Date.now()}`,
+      name: newModelName,
+      category: 'organization',
+      categoryLabel: 'Organization Hierarchy Models',
+      description: `Created via ${method} for ${zone.name}`,
+      sourceBadge: 'Organization Model',
+      lifecycleStatus: 'published',
+      updatedAt: 'Created just now',
+      levelCount: 4,
+      tags: ['Custom'],
+      model: HIERARCHY_MODELS_CATALOG[0].model,
+    };
+    initiateApplyModel(newEntry);
   };
 
   return (
@@ -239,6 +303,48 @@ function ZoneCard({
       {/* ── Expanded Content Canvas ────────────────────────────────────────── */}
       {expanded && (
         <div className="border-t border-[#d1def0] px-5 py-5 bg-[#f7f8f9] space-y-4">
+          {/* ── LIGHTWEIGHT SUCCESS BANNER FOR NEWLY LINKED MODELS ──────────── */}
+          {appliedBannerInfo && (
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                  ✓
+                </div>
+                <div className="text-xs">
+                  <span className="font-bold text-purple-950 block">
+                    Hierarchy "{appliedBannerInfo.modelName}" created successfully and applied to {zone.name}.
+                  </span>
+                  <span className="text-purple-700 text-[11px]">
+                    The model is automatically linked to this zone.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!appliedBannerInfo.isSaved ? (
+                  <button
+                    type="button"
+                    onClick={handleSaveToLibrary}
+                    className="px-3 py-1.5 text-xs font-semibold text-purple-900 bg-white border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1"
+                  >
+                    <Save className="w-3.5 h-3.5" /> Save as Reusable Model
+                  </button>
+                ) : (
+                  <span className="text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Saved to Organization Models
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setAppliedBannerInfo(null)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831]"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── LEVEL 1 HIERARCHY NAMING CONTROL ───────────────────────────── */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
@@ -437,9 +543,13 @@ function ZoneCard({
                       ))}
                     </div>
 
+                    {/* Compact Grid of Recent Models with Lifecycle Badges */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {filteredCatalog.slice(0, 4).map(entry => {
                         const isSelectedModel = activeModel.name === entry.name;
+                        const lifecycle = LIFECYCLE_BADGE_MAP[entry.lifecycleStatus];
+                        const isDisabled = entry.lifecycleStatus === 'deprecated' || entry.lifecycleStatus === 'archived';
+
                         return (
                           <div
                             key={entry.id}
@@ -447,54 +557,48 @@ function ZoneCard({
                               isSelectedModel
                                 ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 shadow-xs'
                                 : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                            } ${isDisabled ? 'opacity-70 bg-gray-50/60' : ''}`}
                           >
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <h6 className="text-xs font-bold text-[#172B4D]">{entry.name}</h6>
-                                <span className="text-[9px] font-semibold bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-100">
-                                  {entry.sourceBadge}
-                                </span>
+                                <h6 className="text-xs font-bold text-[#172B4D] flex items-center gap-1.5">
+                                  {entry.name}
+                                  {isDisabled && <Lock className="w-3 h-3 text-red-500" />}
+                                </h6>
+                                <div className="flex items-center gap-1">
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border uppercase ${lifecycle.className}`}>
+                                    {lifecycle.label}
+                                  </span>
+                                </div>
                               </div>
                               <p className="text-[11px] text-gray-500 line-clamp-1">{entry.description}</p>
                             </div>
 
                             <button
                               type="button"
+                              disabled={isDisabled}
                               onClick={() => initiateApplyModel(entry)}
                               className={`mt-2 w-full py-1 text-[11px] font-bold rounded-lg transition-colors ${
-                                isSelectedModel
+                                isDisabled
+                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
+                                  : isSelectedModel
                                   ? 'bg-green-50 text-green-700 border border-green-200'
                                   : 'bg-[#5C1F3D] text-white hover:bg-[#4a1831]'
                               }`}
                             >
-                              {isSelectedModel ? 'Selected Model' : 'Apply Model'}
+                              {isDisabled ? `Cannot Assign (${lifecycle.label})` : isSelectedModel ? 'Selected Model' : 'Apply Model'}
                             </button>
                           </div>
                         );
                       })}
                     </div>
 
+                    {/* ── BOTTOM ADVANCED ACTIONS ──────────────────────────────── */}
                     <div className="pt-3 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            const newModelName = `${businessLabel || 'Custom'} Special Hierarchy`;
-                            const newEntry: HierarchyModelCatalogEntry = {
-                              id: `hm-new-${Date.now()}`,
-                              name: newModelName,
-                              category: 'organization',
-                              categoryLabel: 'Organization Hierarchy Models',
-                              description: `Custom model created for ${zone.name}`,
-                              sourceBadge: 'Organization Model',
-                              updatedAt: 'Created just now',
-                              levelCount: 4,
-                              tags: ['Custom'],
-                              model: HIERARCHY_MODELS_CATALOG[0].model,
-                            };
-                            initiateApplyModel(newEntry);
-                          }}
+                          onClick={() => setShowCreationMethodsModal(true)}
                           className="px-3.5 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
                         >
                           <Plus className="w-3.5 h-3.5" /> + Create New Hierarchy Model
@@ -519,6 +623,92 @@ function ZoneCard({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── CREATION METHOD SELECTION MODAL ───────────────────────────────── */}
+      {showCreationMethodsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-[#d1def0] max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#5C1F3D]" />
+                <h3 className="text-base font-bold text-[#172B4D]">Choose Hierarchy Creation Method</h3>
+              </div>
+              <button onClick={() => setShowCreationMethodsModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              Select how you would like to create your new reusable Hierarchy Model.
+            </p>
+
+            <div className="space-y-2.5">
+              {[
+                {
+                  id: 'blueprint',
+                  title: 'Use flowOne Blueprint (Recommended)',
+                  desc: 'Start with a pre-configured, industry-proven warehouse hierarchy template.',
+                  icon: Sparkles,
+                  badge: 'Recommended',
+                },
+                {
+                  id: 'clone',
+                  title: 'Clone Existing Hierarchy Model',
+                  desc: 'Duplicate an existing active model from your Organization Library as a baseline.',
+                  icon: Copy,
+                },
+                {
+                  id: 'scratch',
+                  title: 'Build From Scratch',
+                  desc: 'Design a completely custom hierarchy chain level-by-level.',
+                  icon: Wrench,
+                },
+                {
+                  id: 'import',
+                  title: 'Import Hierarchy Model',
+                  desc: 'Upload a valid JSON schema definition file.',
+                  icon: FileCode,
+                },
+              ].map(m => {
+                const Icon = m.icon;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => handleCreationMethodSelect(m.title)}
+                    className="w-full p-3.5 rounded-xl border border-gray-200 bg-white hover:border-[#5C1F3D] hover:bg-purple-50/30 transition-all text-left flex items-start gap-3 group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#5C1F3D]/10 text-[#5C1F3D] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#172B4D] group-hover:text-[#5C1F3D]">{m.title}</span>
+                        {m.badge && (
+                          <span className="text-[9px] font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded-full">
+                            {m.badge}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-gray-500 block mt-0.5">{m.desc}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowCreationMethodsModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -565,7 +755,7 @@ function ZoneCard({
               </button>
               <button
                 type="button"
-                onClick={() => applyModelDirectly(pendingModelToApply)}
+                onClick={() => applyModelDirectly(pendingModelToApply, true)}
                 className="px-4 py-2 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-xs"
               >
                 Create Draft & Continue
@@ -669,31 +859,50 @@ function ZoneCard({
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 grid grid-cols-2 gap-4">
-              {HIERARCHY_MODELS_CATALOG.map(entry => (
-                <div key={entry.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-2xs hover:border-[#5C1F3D] flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-bold text-[#172B4D]">{entry.name}</h4>
-                      <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-2 py-0.5 rounded">{entry.sourceBadge}</span>
+              {HIERARCHY_MODELS_CATALOG.map(entry => {
+                const lifecycle = LIFECYCLE_BADGE_MAP[entry.lifecycleStatus];
+                const isDisabled = entry.lifecycleStatus === 'deprecated' || entry.lifecycleStatus === 'archived';
+
+                return (
+                  <div key={entry.id} className={`bg-white border border-gray-200 rounded-xl p-4 shadow-2xs flex flex-col justify-between ${
+                    isDisabled ? 'opacity-70 bg-gray-50' : 'hover:border-[#5C1F3D]'
+                  }`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-bold text-[#172B4D] flex items-center gap-1.5">
+                          {entry.name}
+                          {isDisabled && <Lock className="w-3 h-3 text-red-500" />}
+                        </h4>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${lifecycle.className}`}>
+                            {lifecycle.label}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-3">{entry.description}</p>
+                      <div className="flex items-center gap-1 font-mono text-[11px] text-gray-600 flex-wrap">
+                        {entry.model.levels.map(l => (
+                          <span key={l.id} className="bg-gray-100 px-1.5 py-0.5 rounded">{l.name}</span>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mb-3">{entry.description}</p>
-                    <div className="flex items-center gap-1 font-mono text-[11px] text-gray-600 flex-wrap">
-                      {entry.model.levels.map(l => (
-                        <span key={l.id} className="bg-gray-100 px-1.5 py-0.5 rounded">{l.name}</span>
-                      ))}
-                    </div>
+                    <button
+                      disabled={isDisabled}
+                      onClick={() => {
+                        initiateApplyModel(entry);
+                        setShowFullCatalogModal(false);
+                      }}
+                      className={`mt-4 w-full py-2 text-xs font-bold rounded-lg ${
+                        isDisabled
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
+                          : 'bg-[#5C1F3D] text-white hover:bg-[#4a1831]'
+                      }`}
+                    >
+                      {isDisabled ? `Cannot Assign (${lifecycle.label})` : 'Select Model'}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      initiateApplyModel(entry);
-                      setShowFullCatalogModal(false);
-                    }}
-                    className="mt-4 w-full py-2 text-xs font-bold text-white bg-[#5C1F3D] rounded-lg hover:bg-[#4a1831]"
-                  >
-                    Select Model
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -741,6 +950,7 @@ function ZoneCard({
                     categoryLabel: 'Organization Hierarchy Models',
                     description: 'Imported from JSON schema',
                     sourceBadge: 'Organization Model',
+                    lifecycleStatus: 'published',
                     updatedAt: 'Imported just now',
                     levelCount: 4,
                     tags: ['Imported'],
