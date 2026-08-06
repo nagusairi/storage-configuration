@@ -163,12 +163,6 @@ export function WarehouseHubScreen({
               View, monitor and govern warehouse configurations across your entire organization.
             </p>
           </div>
-          <button
-            onClick={onNewWarehouse}
-            className="px-4 py-2.5 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center gap-2 shadow-sm flex-shrink-0 self-start md:self-auto"
-          >
-            <Plus className="w-4 h-4" /> New Warehouse
-          </button>
         </div>
 
         {/* Aggregate KPI Stat Badges */}
