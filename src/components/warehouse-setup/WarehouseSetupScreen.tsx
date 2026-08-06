@@ -112,11 +112,13 @@ export function WarehouseSetupScreen({
 
   return (
     <div className="flex flex-col h-full bg-[#f7f8f9] rounded-lg border border-[#d1def0] overflow-hidden">
-      {/* ── Top Header ────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#d1def0] px-8 py-4 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-lg font-bold text-[#172B4D]">Warehouse Setup</h1>
-          <p className="text-xs text-gray-500 font-medium mt-0.5">{warehouseName}</p>
+      {/* ── Top Header (Compact Single Row) ───────────────────────────────── */}
+      <div className="bg-white border-b border-[#d1def0] px-6 py-2.5 flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-sm font-bold text-[#172B4D]">Warehouse Setup</h1>
+          <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f7f8f9] border border-gray-200 px-3 py-1 rounded-lg font-medium">
+            <span><strong className="text-gray-500 font-semibold">Warehouse:</strong> {warehouseName}</span>
+          </div>
         </div>
 
         <button
