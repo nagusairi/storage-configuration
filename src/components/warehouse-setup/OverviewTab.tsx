@@ -49,10 +49,7 @@ export function OverviewTab({ config, onSetupClick }: OverviewTabProps) {
 
       {/* Zones */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-[#172B4D]">Zones ({zones.length})</h3>
-          <button onClick={onSetupClick} className="text-xs font-medium text-[#0052CC] hover:underline">Manage Zones →</button>
-        </div>
+        <h3 className="text-sm font-semibold text-[#172B4D] mb-3">Zones ({zones.length})</h3>
         {zones.length === 0 ? (
           <div className="flex items-center justify-center py-10 bg-[#f7f8f9] rounded-xl border border-dashed border-[#d1def0]">
             <div className="text-center">
