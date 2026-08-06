@@ -141,30 +141,59 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
     }
   };
 
+  // Progressive Context-Aware Header Info
+  const getHeaderInfo = () => {
+    if (isZoneMode) {
+      const zoneTitle = targetZone
+        ? (targetZone.businessName ? `Zone – ${targetZone.businessName}` : targetZone.name)
+        : 'Zone';
+      const modelName = targetZone?.customHierarchyModel?.name || state.hierarchyModel?.name || 'Cold Chain Model';
+      return {
+        title: 'Configure Zone',
+        heading: zoneTitle,
+        metadata: `${warehouseName} • ${modelName} • Draft`,
+      };
+    }
+
+    const hasHierarchy = state.currentStep >= 2 || Boolean(state.hierarchyModel?.name);
+    const hasZones = state.currentStep >= 4 && state.zones.length > 0;
+    const modelName = state.hierarchyModel?.name || 'Standard 6-Level';
+    const zoneCount = state.zones.length;
+
+    const parts: string[] = [];
+    if (hasHierarchy) {
+      parts.push(modelName);
+    }
+    if (hasZones && zoneCount > 0) {
+      parts.push(`${zoneCount} ${zoneCount === 1 ? 'Zone' : 'Zones'}`);
+    }
+    parts.push('Draft');
+
+    return {
+      title: 'Configure Warehouse',
+      heading: warehouseName,
+      metadata: parts.join(' • '),
+    };
+  };
+
+  const headerInfo = getHeaderInfo();
+
   return (
     <div className="flex flex-col h-full bg-[#f7f8f9]">
       {/* Sticky Compact Header & Stepper Area */}
       <div className="sticky top-0 z-30 bg-white border-b border-[#d1def0] shadow-2xs flex-shrink-0">
-        {/* Compact Single-Row Header */}
-        <div className="px-6 py-2.5 flex items-center justify-between flex-wrap gap-3 border-b border-gray-100">
-          <div className="flex items-center gap-4 flex-wrap">
-            <h2 className="text-sm font-bold text-[#172B4D]">
-              {isZoneMode ? 'Configure Zone' : 'Configure Warehouse'}
+        {/* Progressive Context-Aware Header */}
+        <div className="px-6 py-3 flex items-center justify-between flex-wrap gap-3 border-b border-gray-100">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              {headerInfo.title}
+            </span>
+            <h2 className="text-base font-bold text-[#172B4D] flex items-center gap-2 mt-0.5">
+              {headerInfo.heading}
             </h2>
-
-            {/* Compact Metadata Row (Inline) */}
-            <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f7f8f9] border border-gray-200 px-3 py-1 rounded-lg font-medium">
-              <span><strong className="text-gray-500 font-semibold">Warehouse:</strong> {warehouseName}</span>
-              <span className="text-gray-300">|</span>
-              <span><strong className="text-gray-500 font-semibold">Zone:</strong> {zoneName}</span>
-              <span className="text-gray-300">|</span>
-              <span><strong className="text-gray-500 font-semibold">Hierarchy:</strong> {hierarchyMode}</span>
-              <span className="text-gray-300">|</span>
-              <span className="inline-flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                Draft
-              </span>
-            </div>
+            <p className="text-xs text-gray-600 font-medium flex items-center gap-1.5 mt-0.5">
+              <span>{headerInfo.metadata}</span>
+            </p>
           </div>
 
           <button
