@@ -434,20 +434,20 @@ export function WarehouseSetupScreen({
       </div>
 
       {/* ── Bottom Sticky Action Footer ────────────────────────────────────── */}
-      <div className="bg-white border-t border-[#d1def0] px-8 py-4 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-t border-[#d1def0] px-8 py-3 flex items-center justify-between flex-shrink-0">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="h-[32px] px-4 text-xs font-medium leading-none text-gray-600 hover:text-gray-900 border border-gray-300 rounded-[3px] hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center"
         >
           Cancel
         </button>
 
         <button
           onClick={() => onContinue(selectedMethod, selectedTemplateId)}
-          className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
+          className="h-[32px] px-4 text-xs font-medium leading-none text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-2"
         >
-          Continue
-          <ArrowRight className="w-4 h-4" />
+          <span>Continue</span>
+          <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
         </button>
       </div>
     </div>

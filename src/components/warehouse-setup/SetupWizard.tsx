@@ -218,14 +218,14 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
       </div>
 
       {/* Wizard Footer - Unified Single Bottom Action Bar */}
-      <div className="bg-white border-t border-[#d1def0] px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-xs">
+      <div className="bg-white border-t border-[#d1def0] px-6 py-2.5 flex items-center justify-between flex-shrink-0 shadow-xs">
         {state.currentStep > 1 ? (
           <button
             onClick={goPrev}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="h-[32px] px-4 text-xs font-medium leading-none text-gray-600 border border-gray-300 rounded-[3px] hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-1.5"
           >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
+            <ChevronLeft className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Previous</span>
           </button>
         ) : (
           <div />
@@ -237,29 +237,29 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
               <button
                 type="button"
                 onClick={() => {}}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="h-[32px] px-4 text-xs font-medium leading-none text-gray-600 border border-gray-300 rounded-[3px] hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-1.5"
               >
-                <Copy className="w-3.5 h-3.5" />
-                Save as New Template
+                <Copy className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>Save as New Template</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => onChange({ ...state, isDirty: true })}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f4f0f2] transition-colors"
+                className="h-[32px] px-4 text-xs font-medium leading-none text-[#5C1F3D] border border-[#5C1F3D] rounded-[3px] hover:bg-[#f4f0f2] transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-1.5"
               >
-                <Save className="w-3.5 h-3.5" />
-                Save Draft
+                <Save className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>Save Draft</span>
               </button>
 
               <button
                 type="button"
                 disabled={hasErrors}
                 onClick={handlePublish}
-                className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-[32px] px-4 text-xs font-medium leading-none text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-1.5"
               >
-                <Globe className="w-4 h-4" />
-                {isZoneMode ? 'Publish Zone Configuration' : 'Publish Configuration'}
+                <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{isZoneMode ? 'Publish Zone Configuration' : 'Publish Configuration'}</span>
               </button>
             </>
           ) : (
@@ -267,7 +267,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
               <button
                 type="button"
                 onClick={() => onChange({ ...state, isDirty: true })}
-                className="px-3.5 py-2 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+                className="h-[32px] px-4 text-xs font-medium leading-none text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-[3px] transition-colors whitespace-nowrap flex-shrink-0 flex items-center justify-center"
               >
                 Save Draft
               </button>
@@ -275,10 +275,10 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
               <button
                 type="button"
                 onClick={goNext}
-                className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm"
+                className="h-[32px] px-4 text-xs font-medium leading-none text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-[3px] transition-colors shadow-2xs whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-1.5"
               >
-                Next
-                <ChevronRight className="w-4 h-4" />
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
               </button>
             </>
           )}
