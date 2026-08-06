@@ -207,7 +207,7 @@ export function SetupWizard({ state, onChange, onClose, warehouseName }: SetupWi
                 className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Globe className="w-4 h-4" />
-                Publish Configuration
+                {isZoneMode ? 'Publish Zone Configuration' : 'Publish Configuration'}
               </button>
             </>
           ) : (
