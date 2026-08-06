@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Activity, Search, Filter, RefreshCw, Download, GitBranch, Globe, MapPin, Package,
-  FileText, Clock, User, CheckCircle2, ChevronRight, X, RotateCcw, ArrowLeftRight,
+  FileText, Clock, User, CheckCircle2, ChevronRight, X, RotateCcw, ArrowLeftRight, ArrowRight,
   Layers, AlertCircle, Info, Calendar, Copy
 } from 'lucide-react';
 import type { WarehouseConfig, EntryTab } from './types';
