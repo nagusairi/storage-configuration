@@ -168,36 +168,36 @@ function DraftResumePanel({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Primary */}
           <button
             onClick={onResume}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
           >
-            <PlayCircle className="w-4 h-4" />
-            Resume Draft
+            <PlayCircle className="w-4 h-4 flex-shrink-0" />
+            <span>Resume Draft</span>
           </button>
           {/* Secondary actions */}
           <button
             onClick={onPublish}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#5C1F3D] border border-[#5C1F3D] rounded-lg hover:bg-[#f9f4f7] transition-colors whitespace-nowrap flex-shrink-0"
           >
-            <Globe className="w-4 h-4" />
-            Publish
+            <Globe className="w-4 h-4 flex-shrink-0" />
+            <span>Publish</span>
           </button>
           <button
             onClick={onDuplicate}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0"
           >
-            <Copy className="w-4 h-4" />
-            Duplicate
+            <Copy className="w-4 h-4 flex-shrink-0" />
+            <span>Duplicate</span>
           </button>
           <button
             onClick={onDiscard}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors ml-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap flex-shrink-0 ml-auto"
           >
-            <Trash2 className="w-4 h-4" />
-            Discard Draft
+            <Trash2 className="w-4 h-4 flex-shrink-0" />
+            <span>Discard Draft</span>
           </button>
         </div>
       </div>
