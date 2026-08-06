@@ -22,6 +22,7 @@ const StockAdjustmentDraft = lazy(() => import('../pages/inventory/StockAdjustme
 const StorageConfiguration = lazy(() => import('../pages/storage-configuration/StorageConfiguration'));
 const StorageConfigurationV2 = lazy(() => import('../pages/storage-configuration/StorageConfigurationV2'));
 const StorageConfigurationV3 = lazy(() => import('../pages/storage-configuration/StorageConfigurationV3'));
+const StorageConfigurationV4 = lazy(() => import('../pages/storage-configuration/StorageConfigurationV4'));
 
 // Loading component
 const PageLoader = () => (
@@ -320,6 +321,17 @@ export const router = createBrowserRouter([
             handle: {
               title: 'Storage Configuration v3',
               breadcrumbs: ['Dashboard', 'Storage Configuration v3'],
+              moduleKey: 'warehouse-management',
+              sidebarGroup: 'warehouse'
+            } as RouteMetadata
+          },
+          // Storage Configuration V4 Route
+          {
+            path: 'storage-configuration-v4',
+            element: <LazyWrapper><StorageConfigurationV4 /></LazyWrapper>,
+            handle: {
+              title: 'Storage Configuration v4',
+              breadcrumbs: ['Dashboard', 'Storage Configuration v4'],
               moduleKey: 'warehouse-management',
               sidebarGroup: 'warehouse'
             } as RouteMetadata
