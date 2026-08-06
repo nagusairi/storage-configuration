@@ -415,7 +415,6 @@ export function ZonesTab({ selectedWarehouse }: ZonesTabProps) {
                   style={{ fontSize: 'var(--text-sm)' }}
                 >
                   <MenuItem value="" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>All Types</MenuItem>
-                  <MenuItem value="picking" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Picking</MenuItem>
                   <MenuItem value="bulk" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Bulk Storage</MenuItem>
                   <MenuItem value="cold" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Cold Storage</MenuItem>
                   <MenuItem value="hazard" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Hazard</MenuItem>
@@ -556,7 +555,6 @@ export function ZonesTab({ selectedWarehouse }: ZonesTabProps) {
                       value={selectedZone.type}
                       style={{ fontSize: 'var(--text-sm)' }}
                     >
-                      <MenuItem value="picking" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Picking</MenuItem>
                       <MenuItem value="bulk" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Bulk Storage</MenuItem>
                       <MenuItem value="cold" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Cold Storage</MenuItem>
                       <MenuItem value="hazard" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Hazard Storage</MenuItem>
@@ -1001,7 +999,6 @@ export function ZonesTab({ selectedWarehouse }: ZonesTabProps) {
                   onChange={(e) => setNewZone({ ...newZone, type: e.target.value })}
                   style={{ fontSize: 'var(--text-sm)' }}
                 >
-                  <MenuItem value="picking" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Picking</MenuItem>
                   <MenuItem value="bulk" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Bulk Storage</MenuItem>
                   <MenuItem value="cold" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Cold Storage</MenuItem>
                   <MenuItem value="hazard" style={{ fontSize: 'var(--text-sm)', textAlign: 'left' }}>Hazard Storage</MenuItem>

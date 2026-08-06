@@ -3,7 +3,7 @@ import type { WizardState, NamingRules } from '../types';
 
 interface Props { state: WizardState; onChange: (s: WizardState) => void; }
 
-const SUB_TABS = ['Location Codes', 'Barcode / QR', 'Capacity Rules', 'Picking Strategy', 'Reserved / Blocked'];
+const SUB_TABS = ['Location Codes', 'Barcode / QR', 'Capacity Rules', 'Reserved / Blocked'];
 
 function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -59,7 +59,7 @@ export function Step6NamingRules({ state, onChange }: Props) {
     <div className="p-6">
       <div className="mb-5">
         <h3 className="text-base font-semibold text-[#172B4D] mb-1">Naming & Rules</h3>
-        <p className="text-sm text-gray-500">Configure location codes, barcodes, capacity rules, and picking strategies.</p>
+        <p className="text-sm text-gray-500">Configure location codes, barcodes, and capacity rules.</p>
       </div>
 
       {/* Sub Tabs */}
@@ -150,22 +150,6 @@ export function Step6NamingRules({ state, onChange }: Props) {
         )}
 
         {subTab === 3 && (
-          <div>
-            <p className="text-sm text-gray-500 mb-4">Set the default picking strategy per zone. You can override per zone in Zone Layouts.</p>
-            {state.zones.map(z => (
-              <div key={z.id} className="flex items-center gap-4 mb-3">
-                <span className="w-40 text-sm font-medium text-[#172B4D] truncate">{z.name}</span>
-                <div className="flex gap-2">
-                  {(['FIFO', 'FEFO', 'LIFO'] as const).map(p => (
-                    <span key={p} className={`px-3 py-1 text-xs font-semibold rounded-full ${z.pickingStrategy === p ? 'bg-[#5C1F3D] text-white' : 'bg-gray-100 text-gray-600'}`}>{p}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {subTab === 4 && (
           <div>
             <p className="text-sm text-gray-500 mb-4">Mark specific location codes as reserved or blocked. These will be excluded from auto-generation.</p>
             <textarea

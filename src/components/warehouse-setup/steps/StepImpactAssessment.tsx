@@ -34,7 +34,7 @@ export function StepImpactAssessment({ state }: Props) {
       </div>
 
       {/* Impact Breakdown Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card 1: Storage Locations */}
         <div className="bg-white rounded-xl border border-[#d1def0] p-4 shadow-2xs">
           <div className="flex items-center gap-2 mb-2">
@@ -78,21 +78,6 @@ export function StepImpactAssessment({ state }: Props) {
           </div>
           <p className="text-lg font-bold text-[#172B4D] font-mono">3 <span className="text-xs font-normal text-gray-500">Active Rules</span></p>
           <p className="text-[11px] text-gray-500 mt-1">• Rules will automatically adjust to new hierarchy</p>
-        </div>
-
-        {/* Card 4: Picking Strategies */}
-        <div className="bg-white rounded-xl border border-[#d1def0] p-4 shadow-2xs">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
-              FEFO
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#172B4D]">Picking Strategy</h4>
-              <p className="text-[11px] text-gray-500">Current routing strategy</p>
-            </div>
-          </div>
-          <p className="text-sm font-bold text-[#172B4D]">{zone?.pickingStrategy ?? 'FEFO (Expiry First)'}</p>
-          <p className="text-[11px] text-green-700 mt-1 font-medium">• Strategy parameters preserved</p>
         </div>
       </div>
     </div>

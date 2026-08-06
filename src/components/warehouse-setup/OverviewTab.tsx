@@ -73,7 +73,7 @@ export function OverviewTab({ config, onSetupClick }: OverviewTabProps) {
                       <h4 className="text-sm font-medium text-[#172B4D]">{zone.name}</h4>
                     </div>
                     <p className="text-xs text-gray-500">
-                      {zone.hierarchyMode === 'custom' ? (zone.customHierarchyModel?.name ?? 'Custom') : 'Default hierarchy'} · {zone.pickingStrategy}
+                      {zone.hierarchyMode === 'custom' ? (zone.customHierarchyModel?.name ?? 'Custom') : 'Default hierarchy'}
                     </p>
                   </div>
                   <div className="text-right">

@@ -183,7 +183,7 @@ export const MOCK_TEMPLATES: WarehouseTemplate[] = [
   {
     id: 'tpl-1',
     name: 'flowOne Standard',
-    description: 'Recommended for general merchandise warehouses. Includes 6-level hierarchy, FIFO picking, and auto-barcode generation.',
+    description: 'Recommended for general merchandise warehouses. Includes 6-level hierarchy and auto-barcode generation.',
     status: 'published',
     createdAt: '2026-01-15',
     updatedAt: '2026-07-01',
@@ -195,7 +195,7 @@ export const MOCK_TEMPLATES: WarehouseTemplate[] = [
   {
     id: 'tpl-2',
     name: 'flowOne Cold Chain',
-    description: 'Designed for temperature-controlled storage. Supports FEFO picking and temperature tracking at each level.',
+    description: 'Designed for temperature-controlled storage. Supports temperature tracking at each level.',
     status: 'published',
     createdAt: '2026-02-20',
     updatedAt: '2026-06-15',

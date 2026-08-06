@@ -416,8 +416,6 @@ function ZoneCard({
                 {isInherited && <CheckCircle2 className="w-3 h-3 text-green-600" />}
                 {getSourceBadge()}
               </span>
-              <span className="text-gray-300">·</span>
-              <span>Picking: <strong className="text-gray-700">{zone.pickingStrategy}</strong></span>
             </p>
           </div>
         </div>
@@ -1238,7 +1236,7 @@ function ZoneCard({
               <ul className="space-y-1 font-mono text-[11px] text-amber-900 pl-2">
                 <li>• 1,248 Active Storage Locations</li>
                 <li>• 352 Inventory SKU Records</li>
-                <li>• 3 Putaway Rules & 2 Picking Strategies</li>
+                <li>• 3 Putaway Rules</li>
                 <li>• 1 Replenishment Rule</li>
               </ul>
               <p className="text-[11px] text-amber-800 pt-1 italic">
