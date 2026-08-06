@@ -1,22 +1,14 @@
 import { useState, useMemo } from 'react';
 import {
   Search,
-  Filter,
   Plus,
   LayoutGrid,
   List,
   GitCompare,
-  CheckCircle2,
-  AlertCircle,
   MoreVertical,
   MapPin,
-  Layers,
-  Box,
-  TrendingUp,
   Download,
   ShieldCheck,
-  Archive,
-  Trash2,
   ArrowUpRight,
   Sparkles,
   ChevronLeft,
@@ -30,6 +22,10 @@ interface WarehouseHubScreenProps {
   onNewWarehouse: () => void;
   onCompare: (selectedWarehouses: WarehouseConfig[]) => void;
 }
+
+// Safe ID & Code Accessors
+const getWhId = (w: WarehouseConfig): string => w.warehouseId || (w as any).id || '';
+const getWhCode = (w: WarehouseConfig): string => w.warehouseCode || getWhId(w).toUpperCase();
 
 export function WarehouseHubScreen({
   warehouses,
@@ -70,7 +66,7 @@ export function WarehouseHubScreen({
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
         const nameMatch = w.warehouseName.toLowerCase().includes(query);
-        const codeMatch = (w.warehouseCode || w.id).toLowerCase().includes(query);
+        const codeMatch = getWhCode(w).toLowerCase().includes(query);
         const locMatch = w.location.toLowerCase().includes(query);
         const modelMatch = (w.activeHierarchyModel?.name || '').toLowerCase().includes(query);
         const templateMatch = (w.templateUsed || '').toLowerCase().includes(query);
@@ -94,7 +90,7 @@ export function WarehouseHubScreen({
     if (selectedIds.length === filteredWarehouses.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredWarehouses.map(w => w.id));
+      setSelectedIds(filteredWarehouses.map(getWhId));
     }
   };
 
@@ -103,16 +99,17 @@ export function WarehouseHubScreen({
   };
 
   const selectedWarehouseObjects = useMemo(() => {
-    return warehouses.filter(w => selectedIds.includes(w.id));
+    return warehouses.filter(w => selectedIds.includes(getWhId(w)));
   }, [warehouses, selectedIds]);
 
   // ── Render Card Action Button ──────────────────────────────────────────────
   const renderCardAction = (w: WarehouseConfig) => {
+    const id = getWhId(w);
     switch (w.configStatus) {
       case 'not-configured':
         return (
           <button
-            onClick={() => onSelectWarehouse(w.id)}
+            onClick={() => onSelectWarehouse(id)}
             className="w-full px-3 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5" /> Start Setup
@@ -121,7 +118,7 @@ export function WarehouseHubScreen({
       case 'draft':
         return (
           <button
-            onClick={() => onSelectWarehouse(w.id)}
+            onClick={() => onSelectWarehouse(id)}
             className="w-full px-3 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
           >
             <Sparkles className="w-3.5 h-3.5" /> Continue Draft
@@ -130,7 +127,7 @@ export function WarehouseHubScreen({
       case 'archived':
         return (
           <button
-            onClick={() => onSelectWarehouse(w.id)}
+            onClick={() => onSelectWarehouse(id)}
             className="w-full px-3 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center gap-1.5"
           >
             View Only
@@ -140,7 +137,7 @@ export function WarehouseHubScreen({
       default:
         return (
           <button
-            onClick={() => onSelectWarehouse(w.id)}
+            onClick={() => onSelectWarehouse(id)}
             className="w-full px-3 py-2 text-xs font-bold text-white bg-[#5C1F3D] hover:bg-[#4a1831] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
           >
             Open Configuration <ArrowUpRight className="w-3.5 h-3.5" />
@@ -323,7 +320,9 @@ export function WarehouseHubScreen({
       {viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paginatedWarehouses.map(w => {
-            const isSelected = selectedIds.includes(w.id);
+            const id = getWhId(w);
+            const code = getWhCode(w);
+            const isSelected = selectedIds.includes(id);
             const statusBadgeMap = {
               published: 'bg-green-50 text-green-700 border-green-200',
               draft: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -339,7 +338,7 @@ export function WarehouseHubScreen({
 
             return (
               <div
-                key={w.id}
+                key={id}
                 className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group ${
                   isSelected ? 'border-[#5C1F3D] ring-2 ring-[#5C1F3D]/20 bg-purple-50/20' : 'border-[#d1def0]'
                 }`}
@@ -351,14 +350,14 @@ export function WarehouseHubScreen({
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => toggleSelectOne(w.id)}
+                        onChange={() => toggleSelectOne(id)}
                         className="mt-1 rounded text-[#5C1F3D] focus:ring-[#5C1F3D] cursor-pointer"
                       />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="text-sm font-bold text-[#172B4D] truncate">{w.warehouseName}</h3>
                           <span className="text-[10px] font-mono font-bold bg-[#5C1F3D] text-white px-2 py-0.5 rounded flex-shrink-0">
-                            {w.warehouseCode || w.id.toUpperCase()}
+                            {code}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
@@ -416,18 +415,18 @@ export function WarehouseHubScreen({
 
                   <div className="relative">
                     <button
-                      onClick={() => setActiveMenuId(activeMenuId === w.id ? null : w.id)}
+                      onClick={() => setActiveMenuId(activeMenuId === id ? null : id)}
                       className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
 
-                    {activeMenuId === w.id && (
+                    {activeMenuId === id && (
                       <div className="absolute right-0 bottom-full mb-1 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-20 py-1 text-xs">
                         <button
                           onClick={() => {
                             setActiveMenuId(null);
-                            onSelectWarehouse(w.id);
+                            onSelectWarehouse(id);
                           }}
                           className="w-full text-left px-3 py-1.5 hover:bg-gray-50 text-gray-700 font-medium"
                         >
@@ -487,7 +486,9 @@ export function WarehouseHubScreen({
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-gray-800">
                 {paginatedWarehouses.map(w => {
-                  const isSelected = selectedIds.includes(w.id);
+                  const id = getWhId(w);
+                  const code = getWhCode(w);
+                  const isSelected = selectedIds.includes(id);
                   const statusBadgeMap = {
                     published: 'bg-green-50 text-green-700 border-green-200',
                     draft: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -503,19 +504,19 @@ export function WarehouseHubScreen({
 
                   return (
                     <tr
-                      key={w.id}
+                      key={id}
                       className={`hover:bg-purple-50/30 transition-colors ${isSelected ? 'bg-purple-50/50' : ''}`}
                     >
                       <td className="p-3.5">
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleSelectOne(w.id)}
+                          onChange={() => toggleSelectOne(id)}
                           className="rounded text-[#5C1F3D] focus:ring-[#5C1F3D] cursor-pointer"
                         />
                       </td>
                       <td className="p-3.5 font-bold text-[#172B4D]">{w.warehouseName}</td>
-                      <td className="p-3.5 font-mono font-bold text-gray-700">{w.warehouseCode || w.id.toUpperCase()}</td>
+                      <td className="p-3.5 font-mono font-bold text-gray-700">{code}</td>
                       <td className="p-3.5 text-gray-500">{w.location}</td>
                       <td className="p-3.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${statusBadgeMap[w.configStatus]}`}>
@@ -535,7 +536,7 @@ export function WarehouseHubScreen({
                       </td>
                       <td className="p-3.5 text-right">
                         <button
-                          onClick={() => onSelectWarehouse(w.id)}
+                          onClick={() => onSelectWarehouse(id)}
                           className="px-3 py-1 text-xs font-semibold text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/30 rounded transition-colors"
                         >
                           Configure →

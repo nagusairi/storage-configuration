@@ -8,6 +8,9 @@ interface WarehouseCompareModalProps {
   onOpenConfig: (warehouseId: string) => void;
 }
 
+const getWhId = (w: WarehouseConfig): string => w.warehouseId || (w as any).id || '';
+const getWhCode = (w: WarehouseConfig): string => w.warehouseCode || getWhId(w).toUpperCase();
+
 export function WarehouseCompareModal({
   isOpen,
   onClose,
@@ -26,8 +29,8 @@ export function WarehouseCompareModal({
   const rows = [
     {
       label: 'Warehouse Code',
-      getter: (w: WarehouseConfig) => w.warehouseCode || w.id.toUpperCase(),
-      render: (w: WarehouseConfig) => <span className="font-mono font-bold text-gray-800">{w.warehouseCode || w.id.toUpperCase()}</span>,
+      getter: (w: WarehouseConfig) => getWhCode(w),
+      render: (w: WarehouseConfig) => <span className="font-mono font-bold text-gray-800">{getWhCode(w)}</span>,
     },
     {
       label: 'Configuration Status',
@@ -146,7 +149,7 @@ export function WarehouseCompareModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-[#d1def0] max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#ffffff] rounded-2xl border border-[#d1def0] max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header Bar */}
         <div className="px-6 py-4 border-b border-gray-200 bg-[#fbfcfd] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -180,23 +183,26 @@ export function WarehouseCompareModal({
                   <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-[200px] bg-gray-50/80 sticky left-0 z-10 border-r border-gray-200">
                     Configuration Field
                   </th>
-                  {warehouses.map((wh) => (
-                    <th key={wh.id} className="p-4 text-sm font-bold text-[#172B4D] min-w-[200px] border-r border-gray-200 last:border-r-0 bg-white">
-                      <div className="flex flex-col gap-1">
-                        <span>{wh.warehouseName}</span>
-                        <span className="text-xs font-normal text-gray-500">{wh.location}</span>
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenConfig(wh.id);
-                          }}
-                          className="mt-2 text-xs font-semibold text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/30 px-2.5 py-1 rounded transition-colors text-center w-full"
-                        >
-                          Configure →
-                        </button>
-                      </div>
-                    </th>
-                  ))}
+                  {warehouses.map((wh) => {
+                    const id = getWhId(wh);
+                    return (
+                      <th key={id} className="p-4 text-sm font-bold text-[#172B4D] min-w-[200px] border-r border-gray-200 last:border-r-0 bg-white">
+                        <div className="flex flex-col gap-1">
+                          <span>{wh.warehouseName}</span>
+                          <span className="text-xs font-normal text-gray-500">{wh.location}</span>
+                          <button
+                            onClick={() => {
+                              onClose();
+                              onOpenConfig(id);
+                            }}
+                            className="mt-2 text-xs font-semibold text-[#5C1F3D] hover:bg-[#5C1F3D]/10 border border-[#5C1F3D]/30 px-2.5 py-1 rounded transition-colors text-center w-full"
+                          >
+                            Configure →
+                          </button>
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -214,7 +220,7 @@ export function WarehouseCompareModal({
                         )}
                       </td>
                       {warehouses.map((wh) => (
-                        <td key={wh.id} className="p-4 text-xs border-r border-gray-200 last:border-r-0">
+                        <td key={getWhId(wh)} className="p-4 text-xs border-r border-gray-200 last:border-r-0">
                           {row.render(wh)}
                         </td>
                       ))}
