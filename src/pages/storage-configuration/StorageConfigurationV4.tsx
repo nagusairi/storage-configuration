@@ -470,7 +470,7 @@ export default function StorageConfigurationV4() {
       breadcrumbs={['Dashboard', 'Storage Configuration v4']}
       disableTemplatePadding
     >
-      <div className="h-full flex flex-col">
+      <div className={`h-full flex flex-col ${wizardState || showWarehouseSetup ? 'p-0' : 'p-4 sm:p-5'}`}>
         {wizardState ? (
           <SetupWizard
             state={wizardState}
