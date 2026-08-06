@@ -1480,6 +1480,11 @@ export function Step4ZoneLayouts({ state, onChange }: Props) {
   const zones = state.zones;
   const defaultHierarchyModel = state.hierarchyModel;
 
+  // Add Zone Modal State
+  const [showAddZoneModal, setShowAddZoneModal] = useState(false);
+  const [newBusinessLabel, setNewBusinessLabel] = useState('');
+  const [newZoneCode, setNewZoneCode] = useState('');
+
   // Enterprise Toolbar State
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'expanded' | 'card' | 'table'>('expanded');
